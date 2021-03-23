@@ -44,6 +44,8 @@ def train(config, train_loader, model, criterion, optimizer, epoch,
         output = model(input)
         target = target.cuda(non_blocking=True)
         target_weight = target_weight.cuda(non_blocking=True)
+        #print("output.shape=",output.shape)
+        #print("target.shape=",target.shape)
 
         loss = criterion(output, target, target_weight)
 

@@ -2,7 +2,7 @@ GPUS: '0,1'
 DATA_DIR: ''
 OUTPUT_DIR: 'output'
 LOG_DIR: 'log'
-WORKERS: 4
+WORKERS: 8
 PRINT_FREQ: 100
 
 DATASET:
@@ -14,8 +14,8 @@ DATASET:
   ROT_FACTOR: 40
   SCALE_FACTOR: 0.3
 MODEL:
-  NAME: 'pose_shufflenetv2'
-  PRETRAINED:  'models/model_best_80.pth.tar' # 'models/shufflenetv2_x1-5666bf0f80.pth' 
+  NAME: 'pose_mobilenet_8'
+  PRETRAINED:  'models/mobilenetv2_0.5-eaa6f9ad.pth' # 'models/mobilenetv2_0.5-eaa6f9ad.pth'  Ultralight-Nano-SimplePose.pth  Ultralight-Nano-SimplePose_0.65259.pth
   IMAGE_SIZE:
   - 192
   - 256
@@ -30,18 +30,18 @@ MODEL:
     DECONV_WITH_BIAS: false
     NUM_DECONV_LAYERS: 3
     NUM_DECONV_FILTERS:
-    - 256
-    - 256
-    - 256
+    - 128
+    - 128
+    - 128
     NUM_DECONV_KERNELS:
-    - 4
-    - 4
-    - 4
+    - 3
+    - 3
+    - 3
     NUM_LAYERS: 50
 LOSS:
   USE_TARGET_WEIGHT: true
 TRAIN:
-  BATCH_SIZE: 32
+  BATCH_SIZE: 128
   SHUFFLE: true
   BEGIN_EPOCH: 0
   END_EPOCH: 140

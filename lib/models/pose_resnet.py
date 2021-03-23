@@ -305,7 +305,7 @@ resnet_spec = {18: (BasicBlock, [2, 2, 2, 2]),
                152: (Bottleneck, [3, 8, 36, 3])}
 
 
-def get_pose_net(cfg, is_train, **kwargs):
+def get_pose_net(cfg, stages_repeats, stages_out_channels, is_train, **kwargs): #stages_repeats, stages_out_channels is useless
     num_layers = cfg.MODEL.EXTRA.NUM_LAYERS
     style = cfg.MODEL.STYLE
 

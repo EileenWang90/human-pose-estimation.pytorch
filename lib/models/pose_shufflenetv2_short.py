@@ -250,7 +250,7 @@ def shufflenet_v2_x2_0(pretrained: bool = False, progress: bool = True, **kwargs
                          [4, 8, 4], [24, 244, 488, 976, 2048], **kwargs)
 
 
-class PoseShuffleNet(nn.Module):
+class PoseShuffleNetShort(nn.Module):
 
     def __init__(self, block, layers, cfg, 
         stages_repeats: List[int],
@@ -259,20 +259,11 @@ class PoseShuffleNet(nn.Module):
         inverted_residual: Callable[..., nn.Module] = InvertedResidual,
         **kwargs ) -> None:
 
-        self.inplanes = 64
+        self.inplanes = 128
         extra = cfg.MODEL.EXTRA
         self.deconv_with_bias = extra.DECONV_WITH_BIAS
 
-        super(PoseShuffleNet, self).__init__()
-        '''self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
-                               bias=False)
-        self.bn1 = nn.BatchNorm2d(64, momentum=BN_MOMENTUM)
-        self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)'''
+        super(PoseShuffleNetShort, self).__init__()
 
         if len(stages_repeats) != 3:
             raise ValueError('expected stages_repeats as list of 3 positive ints')
@@ -306,7 +297,7 @@ class PoseShuffleNet(nn.Module):
 
         output_channels = self._stage_out_channels[-1]
 
-        # in order to make the channel consistent  channel{v2_1.0: 464 -> resnet self.inplanes: 64}
+        # in order to make the channel consistent  channel{v2_1.0: 464 -> resnet self.inplanes: 128}
         self.conv2 = nn.Sequential(
             nn.Conv2d(input_channels, self.inplanes, kernel_size=1, stride=1, padding=0, bias=False), 
             nn.BatchNorm2d(self.inplanes),
@@ -328,23 +319,6 @@ class PoseShuffleNet(nn.Module):
             padding=1 if extra.FINAL_CONV_KERNEL == 3 else 0
         )
 
-    '''def _make_layer(self, block, planes, blocks, stride=1):
-        downsample = None
-        if stride != 1 or self.inplanes != planes * block.expansion:
-            downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(planes * block.expansion, momentum=BN_MOMENTUM),
-            )
-
-        layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample))
-        self.inplanes = planes * block.expansion
-        for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes))
-
-        return nn.Sequential(*layers)'''
-
     def _get_deconv_cfg(self, deconv_kernel, index):
         if deconv_kernel == 4:
             padding = 1
@@ -358,7 +332,7 @@ class PoseShuffleNet(nn.Module):
 
         return deconv_kernel, padding, output_padding
 
-    def _make_deconv_layer(self, num_layers, num_filters, num_kernels):
+    def _make_deconv_layer(self, num_layers, num_filters, num_kernels):  # Idea comes from Mobilenet(depthwise separable convolution)
         assert num_layers == len(num_filters), \
             'ERROR: num_deconv_layers is different len(num_deconv_filters)'
         assert num_layers == len(num_kernels), \
@@ -371,31 +345,27 @@ class PoseShuffleNet(nn.Module):
 
             planes = num_filters[i]
             layers.append(
-                nn.ConvTranspose2d(
+                nn.ConvTranspose2d(  # depthwise_deconv
                     in_channels=self.inplanes,
-                    out_channels=planes,
+                    out_channels=self.inplanes,
                     kernel_size=kernel,
                     stride=2,
                     padding=padding,
                     output_padding=output_padding,
+                    groups=128,
                     bias=self.deconv_with_bias))
+            layers.append(nn.BatchNorm2d(self.inplanes, momentum=BN_MOMENTUM))
+            layers.append(nn.ReLU(inplace=True))
+
+            layers.append(nn.Conv2d(self.inplanes, planes, 1, 1, 0, bias=False)) # pointwise convolution
             layers.append(nn.BatchNorm2d(planes, momentum=BN_MOMENTUM))
             layers.append(nn.ReLU(inplace=True))
+
             self.inplanes = planes
 
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        '''x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)'''
-
         # See note [TorchScript super()] 
         x = self.conv1(x)
         x = self.maxpool(x)
@@ -464,13 +434,6 @@ class PoseShuffleNet(nn.Module):
             raise ValueError('imagenet pretrained model does not exist')
 
 
-'''resnet_spec = {18: (BasicBlock, [2, 2, 2, 2]),
-               34: (BasicBlock, [3, 4, 6, 3]),
-               50: (Bottleneck, [3, 4, 6, 3]),
-               101: (Bottleneck, [3, 4, 23, 3]),
-               152: (Bottleneck, [3, 8, 36, 3])}'''
-
-
 def get_pose_net(cfg, stages_repeats, stages_out_channels,  is_train, **kwargs):
     num_layers = cfg.MODEL.EXTRA.NUM_LAYERS
     #style = cfg.MODEL.STYLE  # deprecated
@@ -479,7 +442,7 @@ def get_pose_net(cfg, stages_repeats, stages_out_channels,  is_train, **kwargs):
     block_class = ""
     layers = []
 
-    model = PoseShuffleNet(block_class, layers, cfg, stages_repeats, stages_out_channels, **kwargs)
+    model = PoseShuffleNetShort(block_class, layers, cfg, stages_repeats, stages_out_channels, **kwargs)
     #model = PoseShuffleNet(cfg, **kwargs)
 
     if is_train and cfg.MODEL.INIT_WEIGHTS:

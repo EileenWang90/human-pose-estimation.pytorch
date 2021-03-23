@@ -11,6 +11,7 @@ from __future__ import print_function
 
 import argparse
 import os
+os.environ['CUDA_VISIBLE_DEVICES']='6,7'
 import pprint
 
 import torch
@@ -20,6 +21,7 @@ import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
+from torchsummary import summary
 
 import _init_paths
 from core.config import config
@@ -114,9 +116,19 @@ def main():
     torch.backends.cudnn.deterministic = config.CUDNN.DETERMINISTIC
     torch.backends.cudnn.enabled = config.CUDNN.ENABLED
 
+    # for shufflenetv2
+    shufflenetv2_spec = {'0.5': ([4, 8, 4], [24, 48, 96, 192, 1024]),
+                         '1.0': ([4, 8, 4], [24, 116, 232, 464, 1024]),
+                         '1.5': ([4, 8, 4], [24, 176, 352, 704, 1024]),
+                         '2.0': ([4, 8, 4], [24, 244, 488, 976, 2048])}
+    stages_repeats, stages_out_channels = shufflenetv2_spec['1.0']
     model = eval('models.'+config.MODEL.NAME+'.get_pose_net')(
-        config, is_train=False
+        config, 
+        stages_repeats, stages_out_channels,
+        is_train=False
     )
+    model = model.cuda()
+    summary(model,input_size=(3, 256, 192))
 
     if config.TEST.MODEL_FILE:
         logger.info('=> loading model from {}'.format(config.TEST.MODEL_FILE))

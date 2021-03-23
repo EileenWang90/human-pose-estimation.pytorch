@@ -10,3 +10,6 @@ from __future__ import print_function
 
 import models.pose_resnet
 import models.pose_shufflenetv2
+import models.pose_shufflenetv2_short
+import models.pose_mobilenet
+import models.pose_mobilenet_8

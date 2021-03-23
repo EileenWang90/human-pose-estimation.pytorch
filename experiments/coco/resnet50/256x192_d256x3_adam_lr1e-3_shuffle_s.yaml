@@ -1,4 +1,4 @@
-GPUS: '0,1'
+GPUS: '0'
 DATA_DIR: ''
 OUTPUT_DIR: 'output'
 LOG_DIR: 'log'
@@ -14,8 +14,8 @@ DATASET:
   ROT_FACTOR: 40
   SCALE_FACTOR: 0.3
 MODEL:
-  NAME: 'pose_shufflenetv2'
-  PRETRAINED:  'models/model_best_80.pth.tar' # 'models/shufflenetv2_x1-5666bf0f80.pth' 
+  NAME: 'pose_shufflenetv2_short'
+  PRETRAINED:  'models/model_best_52.pth.tar' # 'models/shufflenetv2_x1-5666bf0f80.pth' 
   IMAGE_SIZE:
   - 192
   - 256
@@ -30,9 +30,9 @@ MODEL:
     DECONV_WITH_BIAS: false
     NUM_DECONV_LAYERS: 3
     NUM_DECONV_FILTERS:
-    - 256
-    - 256
-    - 256
+    - 128
+    - 128
+    - 128
     NUM_DECONV_KERNELS:
     - 4
     - 4
@@ -41,7 +41,7 @@ MODEL:
 LOSS:
   USE_TARGET_WEIGHT: true
 TRAIN:
-  BATCH_SIZE: 32
+  BATCH_SIZE: 128
   SHUFFLE: true
   BEGIN_EPOCH: 0
   END_EPOCH: 140

@@ -8,9 +8,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import argparse
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='1'
+os.environ['CUDA_VISIBLE_DEVICES']='1,2'
+import argparse
 import pprint
 import shutil
 
@@ -22,6 +22,7 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
+from torchsummary import summary
 
 import _init_paths
 from core.config import config
@@ -44,7 +45,7 @@ def parse_args():
     # general
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        required=True,
+                        default='experiments/coco/resnet50/256x192_d256x3_adam_lr1e-3_mobile.yaml',
                         type=str)
 
     args, rest = parser.parse_known_args()
@@ -62,6 +63,9 @@ def parse_args():
     parser.add_argument('--workers',
                         help='num of dataloader workers',
                         type=int)
+    parser.add_argument('--resume',
+                        help='to train from previous model weights',
+                        action='store_true')
 
     args = parser.parse_args()
 
@@ -90,23 +94,36 @@ def main():
     torch.backends.cudnn.deterministic = config.CUDNN.DETERMINISTIC
     torch.backends.cudnn.enabled = config.CUDNN.ENABLED
 
+    # for shufflenetv2
     shufflenetv2_spec = {'0.5': ([4, 8, 4], [24, 48, 96, 192, 1024]),
                          '1.0': ([4, 8, 4], [24, 116, 232, 464, 1024]),
                          '1.5': ([4, 8, 4], [24, 176, 352, 704, 1024]),
                          '2.0': ([4, 8, 4], [24, 244, 488, 976, 2048])}
     stages_repeats, stages_out_channels = shufflenetv2_spec['1.0']
 
-    # for shufflenetv2
+    is_train = True
+    if(args.resume):
+        is_train = False
+
     model = eval('models.'+config.MODEL.NAME+'.get_pose_net')(
         config,
         stages_repeats, stages_out_channels,
-        is_train=False,
+        is_train=is_train,
     )
+    #print(model)
+    #model = model.cuda()
+    #summary(model,input_size=(3, 256, 192))
 
-    '''# for resnet
+    if(args.resume):
+        is_train = False
+        model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
+        print('Load moel weight from',config.MODEL.PRETRAINED)
+    '''
+    # for resnet
     model = eval('models.'+config.MODEL.NAME+'.get_pose_net')(
         config, is_train=True,
-    )'''
+    )
+    print(model)'''
 
     # copy model file
     this_dir = os.path.dirname(__file__)
