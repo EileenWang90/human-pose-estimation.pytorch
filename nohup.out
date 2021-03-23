@@ -1103,3 +1103,5 @@ Epoch: [25][0/586]	Time 5.756s (5.756s)	Speed 44.5 samples/s	Data 3.442s (3.442s
 Epoch: [25][100/586]	Time 1.947s (2.322s)	Speed 131.5 samples/s	Data 0.000s (0.298s)	Loss 0.00060 (0.00060)	Accuracy 0.656 (0.659)
 Epoch: [25][200/586]	Time 1.963s (2.301s)	Speed 130.4 samples/s	Data 0.000s (0.280s)	Loss 0.00061 (0.00060)	Accuracy 0.668 (0.659)
 Epoch: [25][300/586]	Time 1.938s (2.277s)	Speed 132.1 samples/s	Data 0.000s (0.274s)	Loss 0.00060 (0.00060)	Accuracy 0.661 (0.658)
+Epoch: [25][400/586]	Time 1.953s (2.278s)	Speed 131.1 samples/s	Data 0.000s (0.271s)	Loss 0.00061 (0.00060)	Accuracy 0.666 (0.657)
+Epoch: [25][500/586]	Time 1.990s (2.279s)	Speed 128.6 samples/s	Data 0.000s (0.270s)	Loss 0.00057 (0.00060)	Accuracy 0.690 (0.657)
