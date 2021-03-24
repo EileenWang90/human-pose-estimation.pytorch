@@ -2988,3 +2988,6 @@ DONE (t=0.07s).
  Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.502
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.575
 Epoch: [84][0/586]	Time 6.265s (6.265s)	Speed 40.9 samples/s	Data 3.986s (3.986s)	Loss 0.00053 (0.00053)	Accuracy 0.710 (0.710)
+Epoch: [84][100/586]	Time 1.957s (2.271s)	Speed 130.8 samples/s	Data 0.000s (0.302s)	Loss 0.00055 (0.00055)	Accuracy 0.686 (0.697)
+Epoch: [84][200/586]	Time 1.949s (2.260s)	Speed 131.3 samples/s	Data 0.000s (0.282s)	Loss 0.00051 (0.00055)	Accuracy 0.700 (0.697)
+Epoch: [84][300/586]	Time 2.105s (2.268s)	Speed 121.6 samples/s	Data 0.000s (0.276s)	Loss 0.00055 (0.00055)	Accuracy 0.675 (0.695)
