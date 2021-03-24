@@ -3020,3 +3020,67 @@ DONE (t=0.07s).
  Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.493
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.561
 Epoch: [85][0/586]	Time 6.234s (6.234s)	Speed 41.1 samples/s	Data 3.897s (3.897s)	Loss 0.00056 (0.00056)	Accuracy 0.683 (0.683)
+Epoch: [85][100/586]	Time 1.954s (2.285s)	Speed 131.0 samples/s	Data 0.000s (0.301s)	Loss 0.00059 (0.00055)	Accuracy 0.681 (0.695)
+Epoch: [85][200/586]	Time 2.040s (2.273s)	Speed 125.5 samples/s	Data 0.000s (0.282s)	Loss 0.00051 (0.00055)	Accuracy 0.694 (0.695)
+Epoch: [85][300/586]	Time 2.067s (2.280s)	Speed 123.8 samples/s	Data 0.000s (0.276s)	Loss 0.00055 (0.00055)	Accuracy 0.715 (0.696)
+Epoch: [85][400/586]	Time 1.993s (2.281s)	Speed 128.4 samples/s	Data 0.000s (0.275s)	Loss 0.00056 (0.00055)	Accuracy 0.689 (0.696)
+Epoch: [85][500/586]	Time 1.973s (2.272s)	Speed 129.7 samples/s	Data 0.000s (0.272s)	Loss 0.00055 (0.00055)	Accuracy 0.687 (0.695)
+Test: [0/100]	Time 1.931 (1.931)	Loss 0.0005 (0.0005)	Accuracy 0.734 (0.734)
+=> Writing results json to output/coco/256x192_d256x3_adam_lr1e-3_mobile/results/keypoints_val2017_results.json
+=> coco eval results saved to output/coco/256x192_d256x3_adam_lr1e-3_mobile/results/keypoints_val2017_results.pkl
+| Arch | AP | Ap .5 | AP .75 | AP (M) | AP (L) | AR | AR .5 | AR .75 | AR (M) | AR (L) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 256x192_pose_mobilenet_8_50_d128d128d128 | 0.489 | 0.796 | 0.516 | 0.466 | 0.523 | 0.531 | 0.815 | 0.567 | 0.501 | 0.574 |
+=> saving checkpoint to output/coco/256x192_d256x3_adam_lr1e-3_mobile
+Loading and preparing results...
+DONE (t=0.31s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *keypoints*
+DONE (t=3.16s).
+Accumulating evaluation results...
+DONE (t=0.07s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.489
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.796
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.516
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.466
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.523
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.531
+ Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.815
+ Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.567
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.501
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.574
+Epoch: [86][0/586]	Time 6.626s (6.626s)	Speed 38.6 samples/s	Data 4.190s (4.190s)	Loss 0.00054 (0.00054)	Accuracy 0.683 (0.683)
+Epoch: [86][100/586]	Time 1.979s (2.320s)	Speed 129.4 samples/s	Data 0.000s (0.308s)	Loss 0.00053 (0.00055)	Accuracy 0.699 (0.697)
+Epoch: [86][200/586]	Time 1.956s (2.290s)	Speed 130.9 samples/s	Data 0.000s (0.286s)	Loss 0.00054 (0.00055)	Accuracy 0.703 (0.697)
+Epoch: [86][300/586]	Time 2.029s (2.289s)	Speed 126.2 samples/s	Data 0.000s (0.279s)	Loss 0.00053 (0.00055)	Accuracy 0.692 (0.697)
+Epoch: [86][400/586]	Time 1.967s (2.283s)	Speed 130.1 samples/s	Data 0.000s (0.276s)	Loss 0.00058 (0.00055)	Accuracy 0.687 (0.696)
+Epoch: [86][500/586]	Time 1.971s (2.281s)	Speed 129.9 samples/s	Data 0.000s (0.274s)	Loss 0.00054 (0.00055)	Accuracy 0.707 (0.696)
+Test: [0/100]	Time 2.062 (2.062)	Loss 0.0005 (0.0005)	Accuracy 0.767 (0.767)
+=> Writing results json to output/coco/256x192_d256x3_adam_lr1e-3_mobile/results/keypoints_val2017_results.json
+=> coco eval results saved to output/coco/256x192_d256x3_adam_lr1e-3_mobile/results/keypoints_val2017_results.pkl
+| Arch | AP | Ap .5 | AP .75 | AP (M) | AP (L) | AR | AR .5 | AR .75 | AR (M) | AR (L) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 256x192_pose_mobilenet_8_50_d128d128d128 | 0.491 | 0.796 | 0.515 | 0.473 | 0.521 | 0.533 | 0.813 | 0.567 | 0.507 | 0.571 |
+=> saving checkpoint to output/coco/256x192_d256x3_adam_lr1e-3_mobile
+Loading and preparing results...
+DONE (t=1.54s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *keypoints*
+DONE (t=3.03s).
+Accumulating evaluation results...
+DONE (t=0.07s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.491
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.796
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.515
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.473
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.521
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.533
+ Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.813
+ Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.567
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.507
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.571
+Epoch: [87][0/586]	Time 6.126s (6.126s)	Speed 41.8 samples/s	Data 3.735s (3.735s)	Loss 0.00056 (0.00056)	Accuracy 0.696 (0.696)
