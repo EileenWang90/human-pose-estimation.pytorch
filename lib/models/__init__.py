@@ -13,3 +13,4 @@ import models.pose_shufflenetv2
 import models.pose_shufflenetv2_short
 import models.pose_mobilenet
 import models.pose_mobilenet_8
+import models.pose_mobilenet_relu

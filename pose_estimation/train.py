@@ -9,7 +9,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='1,2'
+os.environ['CUDA_VISIBLE_DEVICES']='0,1,2'
 import argparse
 import pprint
 import shutil

@@ -11,7 +11,7 @@ from __future__ import print_function
 
 import argparse
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='6,7'
+os.environ['CUDA_VISIBLE_DEVICES']='0,1'
 import pprint
 
 import torch
