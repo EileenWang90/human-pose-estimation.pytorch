@@ -102,6 +102,9 @@ venv.bak/
 .mypy_cache/
 
 /data
-/output
+#!/output/coco/*mobile*/*.log
+!/output/coco/*mobile*/*.pth.tar
+/output/coco/*/results/*
+*.jpg
 /models
-/log
+/log/coco
