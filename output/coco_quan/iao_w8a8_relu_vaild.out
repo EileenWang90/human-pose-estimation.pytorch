@@ -1,0 +1,1447 @@
+(base) [ytwang@gpu02 human-pose-estimation.pytorch]$ python ./pose_estimation/valid_quan.py --cfg experiments/coco/resnet50/256x192_d256x3_adam_lr1e-3_mobile.yaml --model-file output/coco_quan/256x192_d256x3_adam_lr1e-3_mobile_w8a8_iao_relu/final_state.pth.tar
+/home/ytwang/wyt_workspace/quantization/human-pose-estimation.pytorch/pose_estimation/../lib/core/config.py:161: YAMLLoadWarning: calling yaml.load() without Loader=... is deprecated, as the default Loader is unsafe. Please read https://msg.pyyaml.org/load for full details.
+  exp_config = edict(yaml.load(f))
+=> creating output/coco_quan/256x192_d256x3_adam_lr1e-3_mobile
+=> creating log/coco_quan/256x192_d256x3_adam_lr1e-3_mobile_2021-04-05-15-55
+Namespace(a_bits=8, bn_fuse=0, cfg='experiments/coco/resnet50/256x192_d256x3_adam_lr1e-3_mobile.yaml', coco_bbox_file=None, flip_test=False, frequent=100, gpus=None, model_file='output/coco_quan/256x192_d256x3_adam_lr1e-3_mobile_w8a8_iao_relu/final_state.pth.tar', post_process=False, q_level=0, q_type=0, quant_inference=True, quant_method=0, shift_heatmap=False, use_detect_bbox=False, w_bits=8, weight_observer=0, workers=None)
+{'CUDNN': {'BENCHMARK': True, 'DETERMINISTIC': False, 'ENABLED': True},
+ 'DATASET': {'DATASET': 'coco',
+             'DATA_FORMAT': 'jpg',
+             'FLIP': True,
+             'HYBRID_JOINTS_TYPE': '',
+             'ROOT': '/home/ytwang/dataset/COCO2017',
+             'ROT_FACTOR': 40,
+             'SCALE_FACTOR': 0.3,
+             'SELECT_DATA': False,
+             'TEST_SET': 'val2017',
+             'TRAIN_SET': 'train2017'},
+ 'DATA_DIR': '',
+ 'DEBUG': {'DEBUG': True,
+           'SAVE_BATCH_IMAGES_GT': True,
+           'SAVE_BATCH_IMAGES_PRED': True,
+           'SAVE_HEATMAPS_GT': True,
+           'SAVE_HEATMAPS_PRED': True},
+ 'GPUS': '0,1',
+ 'LOG_DIR': 'log',
+ 'LOSS': {'USE_TARGET_WEIGHT': True},
+ 'MODEL': {'EXTRA': {'DECONV_WITH_BIAS': False,
+                     'FINAL_CONV_KERNEL': 1,
+                     'HEATMAP_SIZE': array([48, 64]),
+                     'NUM_DECONV_FILTERS': [128, 128, 128],
+                     'NUM_DECONV_KERNELS': [4, 4, 4],
+                     'NUM_DECONV_LAYERS': 3,
+                     'NUM_LAYERS': 50,
+                     'SIGMA': 2,
+                     'TARGET_TYPE': 'gaussian'},
+           'IMAGE_SIZE': array([192, 256]),
+           'INIT_WEIGHTS': True,
+           'NAME': 'pose_mobilenet_relu',
+           'NUM_JOINTS': 17,
+           'PRETRAINED': 'output/coco/256x192_d256x3_adam_lr1e-3_mobile8_relu/final_state.pth.tar',
+           'STYLE': 'pytorch'},
+ 'OUTPUT_DIR': 'output',
+ 'PRINT_FREQ': 100,
+ 'TEST': {'BATCH_SIZE': 128,
+          'BBOX_THRE': 1.0,
+          'COCO_BBOX_FILE': 'models/person_detection_results/COCO_val2017_detections_AP_H_56_person.json',
+          'FLIP_TEST': False,
+          'IMAGE_THRE': 0.0,
+          'IN_VIS_THRE': 0.2,
+          'MODEL_FILE': 'output/coco_quan/256x192_d256x3_adam_lr1e-3_mobile_w8a8_iao_relu/final_state.pth.tar',
+          'NMS_THRE': 1.0,
+          'OKS_THRE': 0.9,
+          'POST_PROCESS': True,
+          'SHIFT_HEATMAP': True,
+          'USE_GT_BBOX': True},
+ 'TRAIN': {'BATCH_SIZE': 256,
+           'BEGIN_EPOCH': 0,
+           'CHECKPOINT': '',
+           'END_EPOCH': 140,
+           'GAMMA1': 0.99,
+           'GAMMA2': 0.0,
+           'LR': 0.001,
+           'LR_FACTOR': 0.1,
+           'LR_STEP': [90, 120],
+           'MOMENTUM': 0.9,
+           'NESTEROV': False,
+           'OPTIMIZER': 'adam',
+           'RESUME': False,
+           'SHUFFLE': True,
+           'WD': 0.0001},
+ 'WORKERS': 8}
+----------------------------------------------------------------
+        Layer (type)               Output Shape         Param #
+================================================================
+            Conv2d-1          [-1, 16, 128, 96]             432
+       BatchNorm2d-2          [-1, 16, 128, 96]              32
+              ReLU-3          [-1, 16, 128, 96]               0
+            Conv2d-4          [-1, 16, 128, 96]             144
+       BatchNorm2d-5          [-1, 16, 128, 96]              32
+              ReLU-6          [-1, 16, 128, 96]               0
+            Conv2d-7           [-1, 8, 128, 96]             128
+       BatchNorm2d-8           [-1, 8, 128, 96]              16
+  InvertedResidual-9           [-1, 8, 128, 96]               0
+           Conv2d-10          [-1, 48, 128, 96]             384
+      BatchNorm2d-11          [-1, 48, 128, 96]              96
+             ReLU-12          [-1, 48, 128, 96]               0
+           Conv2d-13           [-1, 48, 64, 48]             432
+      BatchNorm2d-14           [-1, 48, 64, 48]              96
+             ReLU-15           [-1, 48, 64, 48]               0
+           Conv2d-16           [-1, 16, 64, 48]             768
+      BatchNorm2d-17           [-1, 16, 64, 48]              32
+ InvertedResidual-18           [-1, 16, 64, 48]               0
+           Conv2d-19           [-1, 96, 64, 48]           1,536
+      BatchNorm2d-20           [-1, 96, 64, 48]             192
+             ReLU-21           [-1, 96, 64, 48]               0
+           Conv2d-22           [-1, 96, 64, 48]             864
+      BatchNorm2d-23           [-1, 96, 64, 48]             192
+             ReLU-24           [-1, 96, 64, 48]               0
+           Conv2d-25           [-1, 16, 64, 48]           1,536
+      BatchNorm2d-26           [-1, 16, 64, 48]              32
+ InvertedResidual-27           [-1, 16, 64, 48]               0
+           Conv2d-28           [-1, 96, 64, 48]           1,536
+      BatchNorm2d-29           [-1, 96, 64, 48]             192
+             ReLU-30           [-1, 96, 64, 48]               0
+           Conv2d-31           [-1, 96, 32, 24]             864
+      BatchNorm2d-32           [-1, 96, 32, 24]             192
+             ReLU-33           [-1, 96, 32, 24]               0
+           Conv2d-34           [-1, 16, 32, 24]           1,536
+      BatchNorm2d-35           [-1, 16, 32, 24]              32
+ InvertedResidual-36           [-1, 16, 32, 24]               0
+           Conv2d-37           [-1, 96, 32, 24]           1,536
+      BatchNorm2d-38           [-1, 96, 32, 24]             192
+             ReLU-39           [-1, 96, 32, 24]               0
+           Conv2d-40           [-1, 96, 32, 24]             864
+      BatchNorm2d-41           [-1, 96, 32, 24]             192
+             ReLU-42           [-1, 96, 32, 24]               0
+           Conv2d-43           [-1, 16, 32, 24]           1,536
+      BatchNorm2d-44           [-1, 16, 32, 24]              32
+ InvertedResidual-45           [-1, 16, 32, 24]               0
+           Conv2d-46           [-1, 96, 32, 24]           1,536
+      BatchNorm2d-47           [-1, 96, 32, 24]             192
+             ReLU-48           [-1, 96, 32, 24]               0
+           Conv2d-49           [-1, 96, 32, 24]             864
+      BatchNorm2d-50           [-1, 96, 32, 24]             192
+             ReLU-51           [-1, 96, 32, 24]               0
+           Conv2d-52           [-1, 16, 32, 24]           1,536
+      BatchNorm2d-53           [-1, 16, 32, 24]              32
+ InvertedResidual-54           [-1, 16, 32, 24]               0
+           Conv2d-55           [-1, 96, 32, 24]           1,536
+      BatchNorm2d-56           [-1, 96, 32, 24]             192
+             ReLU-57           [-1, 96, 32, 24]               0
+           Conv2d-58           [-1, 96, 16, 12]             864
+      BatchNorm2d-59           [-1, 96, 16, 12]             192
+             ReLU-60           [-1, 96, 16, 12]               0
+           Conv2d-61           [-1, 32, 16, 12]           3,072
+      BatchNorm2d-62           [-1, 32, 16, 12]              64
+ InvertedResidual-63           [-1, 32, 16, 12]               0
+           Conv2d-64          [-1, 192, 16, 12]           6,144
+      BatchNorm2d-65          [-1, 192, 16, 12]             384
+             ReLU-66          [-1, 192, 16, 12]               0
+           Conv2d-67          [-1, 192, 16, 12]           1,728
+      BatchNorm2d-68          [-1, 192, 16, 12]             384
+             ReLU-69          [-1, 192, 16, 12]               0
+           Conv2d-70           [-1, 32, 16, 12]           6,144
+      BatchNorm2d-71           [-1, 32, 16, 12]              64
+ InvertedResidual-72           [-1, 32, 16, 12]               0
+           Conv2d-73          [-1, 192, 16, 12]           6,144
+      BatchNorm2d-74          [-1, 192, 16, 12]             384
+             ReLU-75          [-1, 192, 16, 12]               0
+           Conv2d-76          [-1, 192, 16, 12]           1,728
+      BatchNorm2d-77          [-1, 192, 16, 12]             384
+             ReLU-78          [-1, 192, 16, 12]               0
+           Conv2d-79           [-1, 32, 16, 12]           6,144
+      BatchNorm2d-80           [-1, 32, 16, 12]              64
+ InvertedResidual-81           [-1, 32, 16, 12]               0
+           Conv2d-82          [-1, 192, 16, 12]           6,144
+      BatchNorm2d-83          [-1, 192, 16, 12]             384
+             ReLU-84          [-1, 192, 16, 12]               0
+           Conv2d-85          [-1, 192, 16, 12]           1,728
+      BatchNorm2d-86          [-1, 192, 16, 12]             384
+             ReLU-87          [-1, 192, 16, 12]               0
+           Conv2d-88           [-1, 32, 16, 12]           6,144
+      BatchNorm2d-89           [-1, 32, 16, 12]              64
+ InvertedResidual-90           [-1, 32, 16, 12]               0
+           Conv2d-91          [-1, 192, 16, 12]           6,144
+      BatchNorm2d-92          [-1, 192, 16, 12]             384
+             ReLU-93          [-1, 192, 16, 12]               0
+           Conv2d-94          [-1, 192, 16, 12]           1,728
+      BatchNorm2d-95          [-1, 192, 16, 12]             384
+             ReLU-96          [-1, 192, 16, 12]               0
+           Conv2d-97           [-1, 48, 16, 12]           9,216
+      BatchNorm2d-98           [-1, 48, 16, 12]              96
+ InvertedResidual-99           [-1, 48, 16, 12]               0
+          Conv2d-100          [-1, 288, 16, 12]          13,824
+     BatchNorm2d-101          [-1, 288, 16, 12]             576
+            ReLU-102          [-1, 288, 16, 12]               0
+          Conv2d-103          [-1, 288, 16, 12]           2,592
+     BatchNorm2d-104          [-1, 288, 16, 12]             576
+            ReLU-105          [-1, 288, 16, 12]               0
+          Conv2d-106           [-1, 48, 16, 12]          13,824
+     BatchNorm2d-107           [-1, 48, 16, 12]              96
+InvertedResidual-108           [-1, 48, 16, 12]               0
+          Conv2d-109          [-1, 288, 16, 12]          13,824
+     BatchNorm2d-110          [-1, 288, 16, 12]             576
+            ReLU-111          [-1, 288, 16, 12]               0
+          Conv2d-112          [-1, 288, 16, 12]           2,592
+     BatchNorm2d-113          [-1, 288, 16, 12]             576
+            ReLU-114          [-1, 288, 16, 12]               0
+          Conv2d-115           [-1, 48, 16, 12]          13,824
+     BatchNorm2d-116           [-1, 48, 16, 12]              96
+InvertedResidual-117           [-1, 48, 16, 12]               0
+          Conv2d-118          [-1, 288, 16, 12]          13,824
+     BatchNorm2d-119          [-1, 288, 16, 12]             576
+            ReLU-120          [-1, 288, 16, 12]               0
+          Conv2d-121            [-1, 288, 8, 6]           2,592
+     BatchNorm2d-122            [-1, 288, 8, 6]             576
+            ReLU-123            [-1, 288, 8, 6]               0
+          Conv2d-124             [-1, 80, 8, 6]          23,040
+     BatchNorm2d-125             [-1, 80, 8, 6]             160
+InvertedResidual-126             [-1, 80, 8, 6]               0
+          Conv2d-127            [-1, 480, 8, 6]          38,400
+     BatchNorm2d-128            [-1, 480, 8, 6]             960
+            ReLU-129            [-1, 480, 8, 6]               0
+          Conv2d-130            [-1, 480, 8, 6]           4,320
+     BatchNorm2d-131            [-1, 480, 8, 6]             960
+            ReLU-132            [-1, 480, 8, 6]               0
+          Conv2d-133             [-1, 80, 8, 6]          38,400
+     BatchNorm2d-134             [-1, 80, 8, 6]             160
+InvertedResidual-135             [-1, 80, 8, 6]               0
+          Conv2d-136            [-1, 480, 8, 6]          38,400
+     BatchNorm2d-137            [-1, 480, 8, 6]             960
+            ReLU-138            [-1, 480, 8, 6]               0
+          Conv2d-139            [-1, 480, 8, 6]           4,320
+     BatchNorm2d-140            [-1, 480, 8, 6]             960
+            ReLU-141            [-1, 480, 8, 6]               0
+          Conv2d-142             [-1, 80, 8, 6]          38,400
+     BatchNorm2d-143             [-1, 80, 8, 6]             160
+InvertedResidual-144             [-1, 80, 8, 6]               0
+          Conv2d-145            [-1, 480, 8, 6]          38,400
+     BatchNorm2d-146            [-1, 480, 8, 6]             960
+            ReLU-147            [-1, 480, 8, 6]               0
+          Conv2d-148            [-1, 480, 8, 6]           4,320
+     BatchNorm2d-149            [-1, 480, 8, 6]             960
+            ReLU-150            [-1, 480, 8, 6]               0
+          Conv2d-151            [-1, 160, 8, 6]          76,800
+     BatchNorm2d-152            [-1, 160, 8, 6]             320
+InvertedResidual-153            [-1, 160, 8, 6]               0
+          Conv2d-154            [-1, 128, 8, 6]          20,480
+     BatchNorm2d-155            [-1, 128, 8, 6]             256
+            ReLU-156            [-1, 128, 8, 6]               0
+ ConvTranspose2d-157          [-1, 128, 16, 12]           2,048
+     BatchNorm2d-158          [-1, 128, 16, 12]             256
+            ReLU-159          [-1, 128, 16, 12]               0
+          Conv2d-160          [-1, 128, 16, 12]          16,384
+     BatchNorm2d-161          [-1, 128, 16, 12]             256
+            ReLU-162          [-1, 128, 16, 12]               0
+ ConvTranspose2d-163          [-1, 128, 32, 24]           2,048
+     BatchNorm2d-164          [-1, 128, 32, 24]             256
+            ReLU-165          [-1, 128, 32, 24]               0
+          Conv2d-166          [-1, 128, 32, 24]          16,384
+     BatchNorm2d-167          [-1, 128, 32, 24]             256
+            ReLU-168          [-1, 128, 32, 24]               0
+ ConvTranspose2d-169          [-1, 128, 64, 48]           2,048
+     BatchNorm2d-170          [-1, 128, 64, 48]             256
+            ReLU-171          [-1, 128, 64, 48]               0
+          Conv2d-172          [-1, 128, 64, 48]          16,384
+     BatchNorm2d-173          [-1, 128, 64, 48]             256
+            ReLU-174          [-1, 128, 64, 48]               0
+          Conv2d-175           [-1, 17, 64, 48]           2,176
+================================================================
+Total params: 560,064
+Trainable params: 560,064
+Non-trainable params: 0
+----------------------------------------------------------------
+Input size (MB): 0.56
+Forward/backward pass size (MB): 104.37
+Params size (MB): 2.14
+Estimated Total Size (MB): 107.07
+----------------------------------------------------------------
+
+*******************ori_model*******************
+ PoseMobileNet(
+  (features): Sequential(
+    (0): Sequential(
+      (0): Conv2d(3, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+      (1): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (2): ReLU(inplace=True)
+    )
+    (1): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(16, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=16, bias=False)
+        (1): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(16, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (4): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (2): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(8, 48, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(48, 48, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), groups=48, bias=False)
+        (4): BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(48, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (3): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(16, 96, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96, bias=False)
+        (4): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(96, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (4): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(16, 96, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(96, 96, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), groups=96, bias=False)
+        (4): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(96, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (5): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(16, 96, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96, bias=False)
+        (4): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(96, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (6): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(16, 96, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96, bias=False)
+        (4): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(96, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (7): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(16, 96, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(96, 96, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), groups=96, bias=False)
+        (4): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(96, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (8): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(32, 192, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(192, 192, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=192, bias=False)
+        (4): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(192, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (9): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(32, 192, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(192, 192, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=192, bias=False)
+        (4): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(192, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (10): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(32, 192, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(192, 192, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=192, bias=False)
+        (4): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(192, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (11): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(32, 192, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(192, 192, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=192, bias=False)
+        (4): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(192, 48, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (12): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(48, 288, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(288, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(288, 288, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=288, bias=False)
+        (4): BatchNorm2d(288, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(288, 48, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (13): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(48, 288, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(288, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(288, 288, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=288, bias=False)
+        (4): BatchNorm2d(288, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(288, 48, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (14): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(48, 288, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(288, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(288, 288, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), groups=288, bias=False)
+        (4): BatchNorm2d(288, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(288, 80, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(80, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (15): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(80, 480, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(480, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(480, 480, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=480, bias=False)
+        (4): BatchNorm2d(480, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(480, 80, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(80, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (16): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(80, 480, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(480, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(480, 480, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=480, bias=False)
+        (4): BatchNorm2d(480, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(480, 80, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(80, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (17): InvertedResidual(
+      (conv): Sequential(
+        (0): Conv2d(80, 480, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(480, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+        (3): Conv2d(480, 480, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=480, bias=False)
+        (4): BatchNorm2d(480, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU(inplace=True)
+        (6): Conv2d(480, 160, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (7): BatchNorm2d(160, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+  )
+  (conv2): Sequential(
+    (0): Conv2d(160, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+    (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (2): ReLU(inplace=True)
+  )
+  (deconv_layers): Sequential(
+    (0): ConvTranspose2d(128, 128, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), groups=128, bias=False)
+    (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (2): ReLU(inplace=True)
+    (3): Conv2d(128, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+    (4): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (5): ReLU(inplace=True)
+    (6): ConvTranspose2d(128, 128, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), groups=128, bias=False)
+    (7): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (8): ReLU(inplace=True)
+    (9): Conv2d(128, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+    (10): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (11): ReLU(inplace=True)
+    (12): ConvTranspose2d(128, 128, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), groups=128, bias=False)
+    (13): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (14): ReLU(inplace=True)
+    (15): Conv2d(128, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+    (16): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (17): ReLU(inplace=True)
+  )
+  (final_layer): Conv2d(128, 17, kernel_size=(1, 1), stride=(1, 1), bias=False)
+)
+
+*******************quant_model*******************
+ PoseMobileNet(
+  (features): Sequential(
+    (0): Sequential(
+      (0): QuantConv2d(
+        3, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False
+        (activation_quantizer): SymmetricQuantizer(
+          (observer): MovingAverageMinMaxObserver()
+        )
+        (weight_quantizer): SymmetricQuantizer(
+          (observer): MinMaxObserver()
+        )
+      )
+      (1): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (2): QuantReLU(
+        inplace=True
+        (activation_quantizer): SymmetricQuantizer(
+          (observer): MovingAverageMinMaxObserver()
+        )
+      )
+    )
+    (1): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          16, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=16, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          16, 8, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (2): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          8, 48, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          48, 48, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), groups=48, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          48, 16, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (3): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          16, 96, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          96, 16, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (4): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          16, 96, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          96, 96, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), groups=96, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          96, 16, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (5): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          16, 96, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          96, 16, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (6): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          16, 96, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          96, 16, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (7): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          16, 96, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          96, 96, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), groups=96, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          96, 32, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (8): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          32, 192, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          192, 192, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=192, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          192, 32, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (9): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          32, 192, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          192, 192, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=192, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          192, 32, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (10): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          32, 192, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          192, 192, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=192, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          192, 32, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (11): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          32, 192, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          192, 192, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=192, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          192, 48, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (12): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          48, 288, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(288, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          288, 288, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=288, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(288, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          288, 48, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (13): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          48, 288, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(288, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          288, 288, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=288, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(288, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          288, 48, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (14): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          48, 288, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(288, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          288, 288, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), groups=288, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(288, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          288, 80, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(80, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (15): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          80, 480, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(480, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          480, 480, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=480, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(480, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          480, 80, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(80, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (16): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          80, 480, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(480, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          480, 480, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=480, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(480, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          480, 80, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(80, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (17): InvertedResidual(
+      (conv): Sequential(
+        (0): QuantConv2d(
+          80, 480, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (1): BatchNorm2d(480, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (3): QuantConv2d(
+          480, 480, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=480, bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (4): BatchNorm2d(480, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): QuantReLU(
+          inplace=True
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+        )
+        (6): QuantConv2d(
+          480, 160, kernel_size=(1, 1), stride=(1, 1), bias=False
+          (activation_quantizer): SymmetricQuantizer(
+            (observer): MovingAverageMinMaxObserver()
+          )
+          (weight_quantizer): SymmetricQuantizer(
+            (observer): MinMaxObserver()
+          )
+        )
+        (7): BatchNorm2d(160, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+  )
+  (conv2): Sequential(
+    (0): QuantConv2d(
+      160, 128, kernel_size=(1, 1), stride=(1, 1), bias=False
+      (activation_quantizer): SymmetricQuantizer(
+        (observer): MovingAverageMinMaxObserver()
+      )
+      (weight_quantizer): SymmetricQuantizer(
+        (observer): MinMaxObserver()
+      )
+    )
+    (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (2): QuantReLU(
+      inplace=True
+      (activation_quantizer): SymmetricQuantizer(
+        (observer): MovingAverageMinMaxObserver()
+      )
+    )
+  )
+  (deconv_layers): Sequential(
+    (0): QuantConvTranspose2d(
+      128, 128, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), groups=128, bias=False
+      (activation_quantizer): SymmetricQuantizer(
+        (observer): MovingAverageMinMaxObserver()
+      )
+      (weight_quantizer): SymmetricQuantizer(
+        (observer): MinMaxObserver()
+      )
+    )
+    (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (2): QuantReLU(
+      inplace=True
+      (activation_quantizer): SymmetricQuantizer(
+        (observer): MovingAverageMinMaxObserver()
+      )
+    )
+    (3): QuantConv2d(
+      128, 128, kernel_size=(1, 1), stride=(1, 1), bias=False
+      (activation_quantizer): SymmetricQuantizer(
+        (observer): MovingAverageMinMaxObserver()
+      )
+      (weight_quantizer): SymmetricQuantizer(
+        (observer): MinMaxObserver()
+      )
+    )
+    (4): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (5): QuantReLU(
+      inplace=True
+      (activation_quantizer): SymmetricQuantizer(
+        (observer): MovingAverageMinMaxObserver()
+      )
+    )
+    (6): QuantConvTranspose2d(
+      128, 128, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), groups=128, bias=False
+      (activation_quantizer): SymmetricQuantizer(
+        (observer): MovingAverageMinMaxObserver()
+      )
+      (weight_quantizer): SymmetricQuantizer(
+        (observer): MinMaxObserver()
+      )
+    )
+    (7): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (8): QuantReLU(
+      inplace=True
+      (activation_quantizer): SymmetricQuantizer(
+        (observer): MovingAverageMinMaxObserver()
+      )
+    )
+    (9): QuantConv2d(
+      128, 128, kernel_size=(1, 1), stride=(1, 1), bias=False
+      (activation_quantizer): SymmetricQuantizer(
+        (observer): MovingAverageMinMaxObserver()
+      )
+      (weight_quantizer): SymmetricQuantizer(
+        (observer): MinMaxObserver()
+      )
+    )
+    (10): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (11): QuantReLU(
+      inplace=True
+      (activation_quantizer): SymmetricQuantizer(
+        (observer): MovingAverageMinMaxObserver()
+      )
+    )
+    (12): QuantConvTranspose2d(
+      128, 128, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), groups=128, bias=False
+      (activation_quantizer): SymmetricQuantizer(
+        (observer): MovingAverageMinMaxObserver()
+      )
+      (weight_quantizer): SymmetricQuantizer(
+        (observer): MinMaxObserver()
+      )
+    )
+    (13): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (14): QuantReLU(
+      inplace=True
+      (activation_quantizer): SymmetricQuantizer(
+        (observer): MovingAverageMinMaxObserver()
+      )
+    )
+    (15): QuantConv2d(
+      128, 128, kernel_size=(1, 1), stride=(1, 1), bias=False
+      (activation_quantizer): SymmetricQuantizer(
+        (observer): MovingAverageMinMaxObserver()
+      )
+      (weight_quantizer): SymmetricQuantizer(
+        (observer): MinMaxObserver()
+      )
+    )
+    (16): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (17): QuantReLU(
+      inplace=True
+      (activation_quantizer): SymmetricQuantizer(
+        (observer): MovingAverageMinMaxObserver()
+      )
+    )
+  )
+  (final_layer): QuantConv2d(
+    128, 17, kernel_size=(1, 1), stride=(1, 1), bias=False
+    (activation_quantizer): SymmetricQuantizer(
+      (observer): MovingAverageMinMaxObserver()
+    )
+    (weight_quantizer): SymmetricQuantizer(
+      (observer): MinMaxObserver()
+    )
+  )
+)
+=> loading model from output/coco_quan/256x192_d256x3_adam_lr1e-3_mobile_w8a8_iao_relu/final_state.pth.tar
+/home/ytwang/anaconda3/lib/python3.8/site-packages/torch/nn/_reduction.py:44: UserWarning: size_average and reduce args will be deprecated, please use reduction='mean' instead.
+  warnings.warn(warning.format(ret))
+loading annotations into memory...
+Done (t=0.19s)
+creating index...
+index created!
+=> classes: ['__background__', 'person']
+=> num_images: 5000
+=> load 6352 samples
+Test: [0/25]    Time 14.850 (14.850)    Loss 0.0013 (0.0013)    Accuracy 0.015 (0.015)
+=> Writing results json to output/coco_quan/256x192_d256x3_adam_lr1e-3_mobile/results/keypoints_val2017_results.json
+Loading and preparing results...
+DONE (t=0.26s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *keypoints*
+DONE (t=2.61s).
+Accumulating evaluation results...
+DONE (t=0.05s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.000
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.000
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.000
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.000
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.000
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.001
+ Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.001
+ Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.000
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.000
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.001
+=> coco eval results saved to output/coco_quan/256x192_d256x3_adam_lr1e-3_mobile/results/keypoints_val2017_results.pkl
+| Arch | AP | Ap .5 | AP .75 | AP (M) | AP (L) | AR | AR .5 | AR .75 | AR (M) | AR (L) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 256x192_pose_mobilenet_relu_50_d128d128d128 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.001 | 0.001 | 0.000 | 0.000 | 0.001 |

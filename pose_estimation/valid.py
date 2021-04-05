@@ -130,17 +130,37 @@ def main():
     model = model.cuda()
     summary(model,input_size=(3, 256, 192))
 
+    # if config.TEST.MODEL_FILE:
+    #     logger.info('=> loading model from {}'.format(config.TEST.MODEL_FILE))
+    #     model.load_state_dict(torch.load(config.TEST.MODEL_FILE))
+    # else:
+    #     model_state_file = os.path.join(final_output_dir,
+    #                                     'final_state.pth.tar')
+    #     logger.info('=> loading model from {}'.format(model_state_file))
+    #     model.load_state_dict(torch.load(model_state_file))
+
+    # gpus = [int(i) for i in config.GPUS.split(',')]
+    # model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+
     if config.TEST.MODEL_FILE:
         logger.info('=> loading model from {}'.format(config.TEST.MODEL_FILE))
-        model.load_state_dict(torch.load(config.TEST.MODEL_FILE))
+        if(config.TEST.MODEL_FILE.split('/')[-1]=='checkpoint.pth.tar'):
+            gpus = [int(i) for i in config.GPUS.split(',')]
+            model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+            model.load_state_dict(torch.load(config.TEST.MODEL_FILE)['state_dict'])
+        elif(config.TEST.MODEL_FILE.split('/')[-1]=='model_best.pth.tar'):  #multiGPU has model.module.
+            gpus = [int(i) for i in config.GPUS.split(',')]
+            model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+            model.state_dict(torch.load(config.TEST.MODEL_FILE))
+        else:
+            model.load_state_dict(torch.load(config.TEST.MODEL_FILE))
+            gpus = [int(i) for i in config.GPUS.split(',')]
+            model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
     else:
         model_state_file = os.path.join(final_output_dir,
                                         'final_state.pth.tar')
         logger.info('=> loading model from {}'.format(model_state_file))
         model.load_state_dict(torch.load(model_state_file))
-
-    gpus = [int(i) for i in config.GPUS.split(',')]
-    model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
 
     # define loss function (criterion) and optimizer
     criterion = JointsMSELoss(

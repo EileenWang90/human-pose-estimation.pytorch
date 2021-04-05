@@ -126,6 +126,17 @@ config.DEBUG.SAVE_BATCH_IMAGES_PRED = False
 config.DEBUG.SAVE_HEATMAPS_GT = False
 config.DEBUG.SAVE_HEATMAPS_PRED = False
 
+# quantization
+config.QUANTIZATION = edict()
+config.QUANTIZATION.W_BITS = 8
+config.QUANTIZATION.A_BITS = 8
+config.QUANTIZATION.BN_FUSE = 0
+config.QUANTIZATION.Q_TYPE = 0
+config.QUANTIZATION.Q_LEVEL = 0
+config.QUANTIZATION.WEIGHT_OBSERVER = 0
+config.QUANTIZATION.QUANT_INFERENCE = False
+config.QUANTIZATION.QUANT_METHOD = 0
+
 
 def _update_dict(k, v):
     if k == 'DATASET':

@@ -33,7 +33,10 @@ def create_logger(cfg, cfg_name, phase='train'):
     cfg_name = os.path.basename(cfg_name).split('.')[0]
 
     #final_output_dir = root_output_dir / dataset / model / cfg_name
-    final_output_dir = root_output_dir / dataset / cfg_name
+    #final_output_dir = root_output_dir / dataset / cfg_name
+    dataset = dataset+'_quan'  #for quantization
+    cfg_name = cfg_name+'_w'+str(cfg.QUANTIZATION.W_BITS)+'a'+str(cfg.QUANTIZATION.A_BITS)+'_bnfuse'+str(cfg.QUANTIZATION.BN_FUSE)
+    final_output_dir = root_output_dir / dataset / cfg_name  #for quantization
 
     print('=> creating {}'.format(final_output_dir))
     final_output_dir.mkdir(parents=True, exist_ok=True)
@@ -49,11 +52,13 @@ def create_logger(cfg, cfg_name, phase='train'):
     console = logging.StreamHandler()
     logging.getLogger('').addHandler(console)
 
+    tensorboard_log_dir = None
     #tensorboard_log_dir = Path(cfg.LOG_DIR) / dataset / model / \
     #    (cfg_name + '_' + time_str)
-    tensorboard_log_dir = Path(cfg.LOG_DIR) / dataset / (cfg_name + '_' + time_str)
-    print('=> creating {}'.format(tensorboard_log_dir))
-    tensorboard_log_dir.mkdir(parents=True, exist_ok=True)
+    if(phase=='train'):  #valid不需要新建tensorboard log文件夹
+        tensorboard_log_dir = Path(cfg.LOG_DIR) / dataset / (cfg_name + '_' + time_str)
+        print('=> creating {}'.format(tensorboard_log_dir))
+        tensorboard_log_dir.mkdir(parents=True, exist_ok=True)
 
     return logger, str(final_output_dir), str(tensorboard_log_dir)
 
