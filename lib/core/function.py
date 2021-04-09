@@ -40,6 +40,7 @@ def train(config, train_loader, model, criterion, optimizer, epoch,
         # measure data loading time
         data_time.update(time.time() - end)
 
+        #print("----------------------Train----------------------\n model:",model)
         # compute output
         output = model(input)
         target = target.cuda(non_blocking=True)
@@ -72,6 +73,7 @@ def train(config, train_loader, model, criterion, optimizer, epoch,
                   'Data {data_time.val:.3f}s ({data_time.avg:.3f}s)\t' \
                   'Loss {loss.val:.5f} ({loss.avg:.5f})\t' \
                   'Accuracy {acc.val:.3f} ({acc.avg:.3f})'.format(
+                      #epoch, i, len(train_loader)//4, batch_time=batch_time,
                       epoch, i, len(train_loader), batch_time=batch_time,
                       speed=input.size(0)/batch_time.val,
                       data_time=data_time, loss=losses, acc=acc)
@@ -86,6 +88,10 @@ def train(config, train_loader, model, criterion, optimizer, epoch,
             prefix = '{}_{}'.format(os.path.join(output_dir, 'train'), i)
             save_debug_images(config, input, meta, target, pred*4, output,
                               prefix)
+        # #Just for debug       reduce number of images to reduce training time
+        # if(i==len(train_loader)//4):
+        #     break
+
 
 
 def validate(config, val_loader, val_dataset, model, criterion, output_dir,
@@ -94,6 +100,7 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
     losses = AverageMeter()
     acc = AverageMeter()
 
+    #print("----------------------Validate----------------------\n model:",model)
     # switch to evaluate mode
     model.eval()
 

@@ -357,7 +357,7 @@ class PoseMobileNet(nn.Module):
                 raise RuntimeError(
                     'No state_dict found in checkpoint file {}'.format(pretrained))
 
-            self.load_state_dict(state_dict, strict=False)
+            self.load_state_dict(state_dict, strict=False) #strict-False 所以可以将量化后的权重导入！
         else:
             logger.error('=> imagenet pretrained model dose not exist')
             logger.error('=> please download it first')

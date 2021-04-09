@@ -40,6 +40,31 @@ import models
 import quantize_dorefa
 import quantize_iao
 
+def select_device(device='', apex=False, batch_size=None):
+    # device = 'cpu' or '0' or '0,1,2,3'
+    cpu_request = device.lower() == 'cpu'
+    if device and not cpu_request:  # if device requested other than 'cpu'
+        os.environ['CUDA_VISIBLE_DEVICES'] = device  # set environment variable
+        assert torch.cuda.is_available(), 'CUDA unavailable, invalid device %s requested' % device  # check availablity
+
+    cuda = False if cpu_request else torch.cuda.is_available()
+    if cuda:
+        c = 1024 ** 2  # bytes to MB
+        ng = torch.cuda.device_count()
+        if ng > 1 and batch_size:  # check that batch_size is compatible with device_count
+            assert batch_size % ng == 0, 'batch-size %g not multiple of GPU count %g' % (batch_size, ng)
+        x = [torch.cuda.get_device_properties(i) for i in range(ng)]
+        s = 'Using CUDA ' + ('Apex ' if apex else '')  # apex for mixed precision https://github.com/NVIDIA/apex
+        for i in range(0, ng):
+            if i == 1:
+                s = ' ' * len(s)
+            print("%sdevice%g _CudaDeviceProperties(name='%s', total_memory=%dMB)" %
+                  (s, i, x[i].name, x[i].total_memory / c))
+    else:
+        print('Using CPU')
+
+    print('')  # skip a line
+    return torch.device('cuda:0' if cuda else 'cpu')
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train keypoints network')
@@ -64,8 +89,8 @@ def parse_args():
     parser.add_argument('--workers',
                         help='num of dataloader workers',
                         type=int)
-    parser.add_argument('--resume',
-                        help='to train from previous model weights',
+    parser.add_argument('--noresume',
+                        help='not to train from previous model weights(default:resume)',
                         action='store_true')
     parser.add_argument('--w_bits', type=int, default=8, help='the bit of weights you want to quantize')     # W — bits
     parser.add_argument('--a_bits', type=int, default=8, help='the bit of feature map you want to quantize')     # A — bits
@@ -127,8 +152,8 @@ def main():
                          '2.0': ([4, 8, 4], [24, 244, 488, 976, 2048])}
     stages_repeats, stages_out_channels = shufflenetv2_spec['1.0']
 
-    is_train = True
-    if(args.resume):
+    is_train = True  #则会使用posenet中的权重初始化函数
+    if(~args.noresume):   #如果使用posenet中的权重初始化函数，则model.load_state_dict函数并没有使用map_location=device参数，多GPU跑的时候test是0的
         is_train = False
 
     model = eval('models.'+config.MODEL.NAME+'.get_pose_net')(
@@ -139,29 +164,34 @@ def main():
     #print(model)
     #model = model.cuda()
     #summary(model,input_size=(3, 256, 192))
-
+    gpus = [int(i) for i in config.GPUS.split(',')]
+    device = select_device(config.GPUS, batch_size=config.TEST.BATCH_SIZE*len(gpus))
+    #model = model.to(device)
     
-
-    if(args.resume):
+    ######################## 使用float版本的weight.pt时 ##################################
+    if(~args.noresume):
         is_train = False
-        model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
-        print('Load moel weight from',config.MODEL.PRETRAINED)
-    '''
-    # for resnet
-    model = eval('models.'+config.MODEL.NAME+'.get_pose_net')(
-        config, is_train=True,
-    )
-    print(model)'''
+        model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
+        #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
+        print('Load model weight from',config.MODEL.PRETRAINED)
 
     ################################## quantization model #################################
-    print('*******************ori_model*******************\n', model)
+    #print('*******************ori_model*******************\n', model)
     if(config.QUANTIZATION.QUANT_METHOD == 1): # DoReFa
         quantize_dorefa.prepare(model, inplace=True, a_bits=config.QUANTIZATION.A_BITS, w_bits=config.QUANTIZATION.W_BITS, quant_inference=config.QUANTIZATION.QUANT_INFERENCE, is_activate=False)
     else: #default quant_method == 0   IAO
-        quantize_iao.prepare(model, inplace=True, a_bits=config.QUANTIZATION.A_BITS, w_bits=config.QUANTIZATION.W_BITS,q_type=config.QUANTIZATION.Q_TYPE, q_level=config.QUANTIZATION.Q_LEVEL, #device=device, 
+        quantize_iao.prepare(model, inplace=True, a_bits=config.QUANTIZATION.A_BITS, w_bits=config.QUANTIZATION.W_BITS,q_type=config.QUANTIZATION.Q_TYPE, q_level=config.QUANTIZATION.Q_LEVEL, #device=device, 放了就会出错！ 
                             weight_observer=config.QUANTIZATION.WEIGHT_OBSERVER, bn_fuse=config.QUANTIZATION.BN_FUSE, quant_inference=config.QUANTIZATION.QUANT_INFERENCE)
-    print('\n*******************quant_model*******************\n', model)
-    #print('\n*******************Using quant_model in test*******************\n')
+    #print('\n*******************quant_model*******************\n', model)
+    print('\n*******************Using quant_model in test*******************\n')
+
+    # ######################## 使用量化版本的weight.pt时 ##################################
+    # if(~args.noresume):
+    #     is_train = False
+    #     print(device) #cuda:0   device=torch.device('cuda:0')
+    #     model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
+    #     #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
+    #     print('Load model weight from',config.MODEL.PRETRAINED)
 
     # copy model file
     this_dir = os.path.dirname(__file__)
@@ -179,10 +209,13 @@ def main():
                              3,
                              config.MODEL.IMAGE_SIZE[1],
                              config.MODEL.IMAGE_SIZE[0]))
-    writer_dict['writer'].add_graph(model, (dump_input, ), verbose=False)
+    writer_dict['writer'].add_graph(model.to('cpu'), (dump_input, ), verbose=False)  #weights(model)和input必须类型一致，即必须都房子啊cpu或者gpu上
 
+    print('0:',next(model.parameters()).device) #查看模型在CPU还是GPU上  
     gpus = [int(i) for i in config.GPUS.split(',')]
     model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+
+    print('1:',next(model.parameters()).device) #查看模型在CPU还是GPU上  
 
     # define loss function (criterion) and optimizer
     criterion = JointsMSELoss(
@@ -240,11 +273,13 @@ def main():
         lr_scheduler.step()
 
         # train for one epoch
+        print('train',next(model.parameters()).device) #查看模型在CPU还是GPU上  
         train(config, train_loader, model, criterion, optimizer, epoch,
               final_output_dir, tb_log_dir, writer_dict)
 
 
         # evaluate on validation set
+        print('validate:',next(model.parameters()).device) #查看模型在CPU还是GPU上  
         perf_indicator = validate(config, valid_loader, valid_dataset, model,
                                   criterion, final_output_dir, tb_log_dir, writer_dict)
 

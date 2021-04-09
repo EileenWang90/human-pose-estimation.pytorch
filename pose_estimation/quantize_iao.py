@@ -157,13 +157,13 @@ class Quantizer(nn.Module):
             if self.training:
                 self.observer(input, device=input.device)  # get device,out_channels,min_val,max_val
                 self.update_qparams()  # update scale and zero_point
-            '''
-            # 量化/反量化
-            #input.to(device) 可以用input.cpu() input.cuda() input.detach()
-            print('input.device:',input.device)
-            print('self.scale.device:',self.scale.device)
-            print('self.zero_point.device:',self.zero_point.device)
-            print('self.quant_min_val:',self.quant_min_val.device)'''
+            
+            # # 量化/反量化
+            # #input.to(device) 可以用input.cpu() input.cuda() input.detach()
+            # print('0input.device:',input.device)
+            # print('0self.scale.device:',self.scale.device)
+            # print('0self.zero_point.device:',self.zero_point.device)
+            # print('0self.quant_min_val:',self.quant_min_val.device)
 
             #解决多卡没法训练的问题：直接用input.device，不要用observer.device
             if self.scale.device != input.device: 
@@ -176,6 +176,13 @@ class Quantizer(nn.Module):
                 self.quant_max_val = self.quant_max_val.to(input.device)
             if self.eps.device != input.device: 
                 self.eps = self.eps.to(input.device)
+
+            # #量化/反量化
+            # #input.to(device) 可以用input.cpu() input.cuda() input.detach()
+            # print('1input.device:',input.device)
+            # print('1self.scale.device:',self.scale.device)
+            # print('1self.zero_point.device:',self.zero_point.device)
+            # print('1self.quant_min_val:',self.quant_min_val.device)
 
             output = (torch.clamp(self.round(input / self.scale - self.zero_point),
                                   self.quant_min_val, self.quant_max_val) + self.zero_point) * self.scale #和公式里的zero_point的加减号正好是相反的
@@ -783,6 +790,7 @@ def prepare(model, inplace=False, a_bits=8, w_bits=8, q_type=0, q_level=0,
             device='cpu', weight_observer=0, bn_fuse=0, quant_inference=False):
     if not inplace:
         model = copy.deepcopy(model)
+    print('a_bits=',a_bits,'\tw_bits=',w_bits,'\tq_type=',q_type,'\tq_level=',q_level,'\tdevice=',device,'\tweight_observer=',weight_observer,'\tbn_fuse=',bn_fuse,'\tquant_inference=',quant_inference)
     add_quant_op(model, a_bits=a_bits, w_bits=w_bits, q_type=q_type, q_level=q_level,
                  device=device, weight_observer=weight_observer, bn_fuse=bn_fuse,
                  quant_inference=quant_inference)
