@@ -92,7 +92,7 @@ def parse_args():
     parser.add_argument('--noresume',
                         help='not to train from previous model weights(default:resume)',
                         action='store_true')
-    parser.add_argument('--w_bits', type=int, default=8, help='the bit of weights you want to quantize')     # W — bits
+    parser.add_argument('--w_bits', type=int, default=6, help='the bit of weights you want to quantize')     # W — bits
     parser.add_argument('--a_bits', type=int, default=8, help='the bit of feature map you want to quantize')     # A — bits
     parser.add_argument('--bn_fuse', type=int, default=0, help='bn_fuse:1')     # bn融合标志位
     parser.add_argument('--q_type', type=int, default=0, help='quant_type:0-symmetric, 1-asymmetric')     # 量化方法选择
@@ -168,12 +168,12 @@ def main():
     device = select_device(config.GPUS, batch_size=config.TEST.BATCH_SIZE*len(gpus))
     #model = model.to(device)
     
-    ######################## 使用float版本的weight.pt时 ##################################
-    if(~args.noresume):
-        is_train = False
-        model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
-        #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
-        print('Load model weight from',config.MODEL.PRETRAINED)
+    # ######################## 使用float版本的weight.pt时 ##################################   这时用两块GPU test结果还是0
+    # if(~args.noresume):
+    #     is_train = False
+    #     model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
+    #     #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
+    #     print('Load model weight from',config.MODEL.PRETRAINED)
 
     ################################## quantization model #################################
     #print('*******************ori_model*******************\n', model)
@@ -185,13 +185,13 @@ def main():
     #print('\n*******************quant_model*******************\n', model)
     print('\n*******************Using quant_model in test*******************\n')
 
-    # ######################## 使用量化版本的weight.pt时 ##################################
-    # if(~args.noresume):
-    #     is_train = False
-    #     print(device) #cuda:0   device=torch.device('cuda:0')
-    #     model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
-    #     #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
-    #     print('Load model weight from',config.MODEL.PRETRAINED)
+    ######################## 使用量化版本的weight.pt时 ##################################
+    if(~args.noresume):
+        is_train = False
+        print(device) #cuda:0   device=torch.device('cuda:0')
+        model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
+        #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
+        print('Load model weight from',config.MODEL.PRETRAINED)
 
     # copy model file
     this_dir = os.path.dirname(__file__)
