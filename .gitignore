@@ -111,3 +111,4 @@ venv.bak/
 /log/coco_quan
 
 .vscode/
+.nfs*
