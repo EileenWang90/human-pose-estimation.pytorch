@@ -112,3 +112,4 @@ venv.bak/
 
 .vscode/
 .nfs*
+output/coco_quan/mobile_quant_relu_w8a8_bnfuse0_resume/checkpoint.pth.tar

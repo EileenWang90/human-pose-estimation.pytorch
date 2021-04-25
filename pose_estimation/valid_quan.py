@@ -9,7 +9,7 @@ from __future__ import print_function
 
 import argparse
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='0'
+os.environ['CUDA_VISIBLE_DEVICES']='6'
 import pprint
 
 import torch
@@ -33,7 +33,8 @@ import dataset
 import models
 
 import quantize_dorefa
-import quantize_iao
+# from quantize_iao import *
+from quantize_iao_uint import *  #对feature map进行uint对称量化
 
 def select_device(device='', apex=False, batch_size=None):
     # device = 'cpu' or '0' or '0,1,2,3'
@@ -66,7 +67,7 @@ def parse_args():
     # general
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        default='experiments/coco/resnet50/mobile_quant_relu.yaml',
+                        default='experiments/coco/resnet50/mobile_quant_relu_uint.yaml',
                         type=str)
 
     args, rest = parser.parse_known_args()
@@ -188,7 +189,7 @@ def main():
     if(config.QUANTIZATION.QUANT_METHOD == 1): # DoReFa
         quantize_dorefa.prepare(model, inplace=True, a_bits=config.QUANTIZATION.A_BITS, w_bits=config.QUANTIZATION.W_BITS, quant_inference=config.QUANTIZATION.QUANT_INFERENCE, is_activate=False)
     else: #default quant_method == 0   IAO
-        quantize_iao.prepare(model, inplace=True, a_bits=config.QUANTIZATION.A_BITS, w_bits=config.QUANTIZATION.W_BITS,q_type=config.QUANTIZATION.Q_TYPE, q_level=config.QUANTIZATION.Q_LEVEL, device=device,#device=next(model.parameters()).device, 
+        prepare(model, inplace=True, a_bits=config.QUANTIZATION.A_BITS, w_bits=config.QUANTIZATION.W_BITS,q_type=config.QUANTIZATION.Q_TYPE, q_level=config.QUANTIZATION.Q_LEVEL, device=device,#device=next(model.parameters()).device, 
                             weight_observer=config.QUANTIZATION.WEIGHT_OBSERVER, bn_fuse=config.QUANTIZATION.BN_FUSE, quant_inference=config.QUANTIZATION.QUANT_INFERENCE)
     #print('\n*******************quant_model*******************\n', model)
     print('\n*******************Using quant_model in test*******************\n')

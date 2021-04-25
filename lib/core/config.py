@@ -20,7 +20,7 @@ config = edict()
 config.OUTPUT_DIR = ''
 config.LOG_DIR = ''
 config.DATA_DIR = ''
-config.GPUS = '0'
+config.GPUS = '0'  #config.GPUS = '0'
 config.WORKERS = 4
 config.PRINT_FREQ = 20
 
@@ -137,6 +137,30 @@ config.QUANTIZATION.WEIGHT_OBSERVER = 0
 config.QUANTIZATION.QUANT_INFERENCE = False
 config.QUANTIZATION.QUANT_METHOD = 0
 
+# LSQ_quantization
+config.LSQACT = edict()
+config.LSQACT.mode = 'lsq'
+config.LSQACT.bit = 4
+config.LSQACT.per_channel = False
+config.LSQACT.symmetric = False
+config.LSQACT.all_positive = True
+
+config.LSQWEIGHT = edict()
+config.LSQWEIGHT.mode = 'lsq'
+config.LSQWEIGHT.bit = 4
+config.LSQWEIGHT.per_channel = True
+config.LSQWEIGHT.symmetric = False
+config.LSQWEIGHT.all_positive = False
+
+config.LSQEXPECTS = edict()
+config.LSQEXPECTS.fc = ''
+# config.LSQEXPECTS.act = edict()
+# config.LSQEXPECTS.act.all_positive = False
+# config.LSQEXPECTS.act.bit = ''
+# config.LSQEXPECTS.weight = edict()
+# config.LSQEXPECTS.weight.bit = ''
+
+
 
 def _update_dict(k, v):
     if k == 'DATASET':
@@ -217,7 +241,7 @@ def get_model_name(cfg):
     name = cfg.MODEL.NAME
     full_name = cfg.MODEL.NAME
     extra = cfg.MODEL.EXTRA
-    if name in ['pose_resnet', 'pose_shufflenetv2', 'pose_shufflenetv2_short', 'pose_mobilenet', 'pose_mobilenet_8', 'pose_mobilenet_relu']:
+    if name in ['pose_resnet', 'pose_shufflenetv2', 'pose_shufflenetv2_short', 'pose_mobilenet', 'pose_mobilenet_8', 'pose_mobilenet_relu', 'pose_mobilenet_relu_bnfuse']:
         name = '{model}_{num_layers}'.format(
             model=name,
             num_layers=extra.NUM_LAYERS)

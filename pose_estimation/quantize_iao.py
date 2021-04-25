@@ -222,7 +222,7 @@ class AsymmetricQuantizer(UnsignedQuantizer):
         float_range = float_range.to(self.quant_min_val.device)                #multiGPU
         self.scale = float_range / quant_range                                 # scale
         self.scale = torch.max(self.scale, self.eps)                           # processing for very small scale
-        self.zero_point = torch.round(self.observer.min_val / self.scale)      # zero_point
+        self.zero_point = torch.round(self.observer.min_val.to(self.quant_min_val.device) / self.scale)      # zero_point
 
 
 # ********************* 量化卷积（同时量化A/W，并做卷积） *********************
@@ -474,6 +474,113 @@ class QuantBNFuseConv2d(QuantConv2d):
                               self.groups)  # 注意，这里加bias，做完整的conv+bn
         return output
 
+# ********************* bn融合_量化卷积（bn融合后，同时量化A/W，并做卷积） *********************
+class QuantBNFuseConvTranspose2d(QuantConvTranspose2d):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride=1,
+                 padding=0,
+                 output_padding=0,
+                 dilation=1,
+                 groups=1,
+                 bias=False,
+                 padding_mode='zeros',
+                 eps=1e-5,
+                 momentum=0.1,
+                 a_bits=8,
+                 w_bits=8,
+                 q_type=0, 
+                 q_level=0, #其实不需要，因为默认反卷积是按层融合的，这个参数并没有用上
+                 device='cpu',
+                 weight_observer=0):
+        #如果函数中没有key进行对应，一定要小心各个数据的顺序！！   dilation顺序错了！！
+        #super(QuantConvTranspose2d, self).__init__(in_channels, out_channels, kernel_size, stride, padding, output_padding, dilation, groups, bias, padding_mode)
+        super(QuantConvTranspose2d, self).__init__(in_channels, out_channels, kernel_size, stride, padding, output_padding, groups, bias, dilation, padding_mode)
+        # self.quant_inference = quant_inference  #这儿是 是否bn_fuse的区别，不融合的ConvTranspose2d有这个变量，并且在forward时有对应的代码
+        self.num_flag = 0
+        self.eps = eps
+        self.momentum = momentum
+        self.gamma = Parameter(torch.Tensor(out_channels)) # 可通过梯度下降法来学习
+        self.beta = Parameter(torch.Tensor(out_channels))
+        self.register_buffer('running_mean', torch.zeros((out_channels), dtype=torch.float32))
+        self.register_buffer('running_var', torch.ones((out_channels), dtype=torch.float32))
+        init.uniform_(self.gamma)
+        init.zeros_(self.beta)  #torch.nn.init  对参数进行初始化
+
+        if q_type == 0:     ##反卷积只能选择按层量化？
+            self.activation_quantizer = SymmetricQuantizer(bits=a_bits, observer=MovingAverageMinMaxObserver(
+                                                           q_level='L', out_channels=None, device=device), activation_weight_flag=1)
+            if weight_observer == 0:
+                self.weight_quantizer = SymmetricQuantizer(bits=w_bits, observer=MinMaxObserver(
+                                                           q_level='L', out_channels=None, device=device), activation_weight_flag=0)
+            else:
+                self.weight_quantizer = SymmetricQuantizer(bits=w_bits, observer=MovingAverageMinMaxObserver(
+                                                           q_level='L', out_channels=None, device=device), activation_weight_flag=0)
+        else:
+            self.activation_quantizer = AsymmetricQuantizer(bits=a_bits, observer=MovingAverageMinMaxObserver(
+                                                            q_level='L', out_channels=None, device=device), activation_weight_flag=2)
+            if weight_observer == 0:
+                self.weight_quantizer = AsymmetricQuantizer(bits=w_bits, observer=MinMaxObserver(
+                                                            q_level='L', out_channels=None, device=device), activation_weight_flag=2)
+            else:
+                self.weight_quantizer = AsymmetricQuantizer(bits=w_bits, observer=MovingAverageMinMaxObserver(
+                                                            q_level='L', out_channels=None, device=device), activation_weight_flag=2)
+    '''
+    def quant_int(self):
+        self.wgt_q = 
+        self.wgt_q = torch.clamp()'''
+
+    def forward(self, input):
+        # 训练态
+        if self.training: #torch.nn.modules.training
+            # 先做普通卷积得到A，以取得BN参数
+            output = F.conv_transpose2d(input, self.weight, self.bias, self.stride, self.padding, self.output_padding,
+                                    self.groups, self.dilation)
+            # 更新BN统计参数（batch和running）
+            dims = [dim for dim in range(4) if dim != 1] # 不统计通道维度  [0，2，3]
+            batch_mean = torch.mean(output, dim=dims)
+            batch_var = torch.var(output, dim=dims)
+            with torch.no_grad():
+                if self.num_flag == 0:
+                    self.num_flag += 1
+                    running_mean = batch_mean
+                    running_var = batch_var
+                else:
+                    running_mean = (1 - self.momentum) * self.running_mean + self.momentum * batch_mean
+                    running_var = (1 - self.momentum) * self.running_var + self.momentum * batch_var
+                self.running_mean.copy_(running_mean)
+                self.running_var.copy_(running_var)
+            # BN融合
+            if self.bias is not None:
+                bias_fused = reshape_to_bias(self.beta + (self.bias - batch_mean) * (self.gamma / torch.sqrt(batch_var + self.eps)))
+            else:
+                bias_fused = reshape_to_bias(self.beta - batch_mean * (self.gamma / torch.sqrt(batch_var + self.eps)))  # b融batch
+            weight_fused = self.weight * reshape_to_weight(self.gamma / torch.sqrt(self.running_var + self.eps))        # w融running
+        # 测试态
+        else:
+            # BN融合
+            if self.bias is not None:
+                bias_fused = reshape_to_bias(self.beta + (self.bias - self.running_mean) * (self.gamma / torch.sqrt(self.running_var + self.eps)))
+            else:
+                bias_fused = reshape_to_bias(self.beta - self.running_mean * (self.gamma / torch.sqrt(self.running_var + self.eps)))  # b融running
+            weight_fused = self.weight * reshape_to_weight(self.gamma / torch.sqrt(self.running_var + self.eps))                      # w融running
+
+        # 量化A和bn融合后的W
+        quant_input = self.activation_quantizer(input)
+        quant_weight = self.weight_quantizer(weight_fused)
+        # 量化卷积
+        if self.training:  # 训练态
+            output = F.conv_transpose2d(quant_input, quant_weight, self.bias, self.stride, self.padding, self.output_padding,
+                                    self.groups, self.dilation)  # 注意，这里不加bias（self.bias为None）若有bias,则已经加入到bias_fused中了
+            # （这里将训练态下，卷积中w融合running参数的效果转为融合batch参数的效果）running ——> batch
+            output *= reshape_to_activation(torch.sqrt(self.running_var + self.eps) / torch.sqrt(batch_var + self.eps))
+            output += reshape_to_activation(bias_fused)
+        else:  # 测试态
+            output = F.conv_transpose2d(quant_input, quant_weight, bias_fused, self.stride, self.padding, self.output_padding,
+                                    self.groups, self.dilation)  # 注意，这里加bias，做完整的conv+bn
+        return output
 
 class QuantLinear(nn.Linear):
     def __init__(self,
@@ -622,13 +729,13 @@ class QuantAdaptiveAvgPool2d(nn.AdaptiveAvgPool2d):
 
 def add_quant_op(module, a_bits=8, w_bits=8, q_type=0, q_level=0, device='cpu',
                  weight_observer=0, bn_fuse=0, quant_inference=False):
-    for name, child in module.named_children():
+    for name, child in module.named_children():   #卷积、全连接、BN_fuse卷积可以选择按层还是按通道量化，反卷积只能按层量化
         if isinstance(child, nn.Conv2d):
-            if bn_fuse:
+            if(bn_fuse and (child.out_channels!=17)):  #网络最后一层conv2d.out_channels==17，因为后面没跟BN层，因此默认不会被量化。现在其走下面的else,就会被量化了
                 conv_name_temp = name
                 conv_child_temp = child
-                #if(conv_child_temp.out_channels == 75):
-                #    module._modules[name] = conv_name_temp
+                flag=0
+
             else:
                 if child.bias is not None:
                     quant_conv = QuantConv2d(child.in_channels, child.out_channels,
@@ -650,90 +757,144 @@ def add_quant_op(module, a_bits=8, w_bits=8, q_type=0, q_level=0, device='cpu',
                 quant_conv.weight.data = child.weight
                 module._modules[name] = quant_conv
         elif isinstance(child, nn.BatchNorm2d):
-            if bn_fuse:
-                if conv_child_temp.bias is not None:
-                    quant_bn_fuse_conv = QuantBNFuseConv2d(conv_child_temp.in_channels,
-                                                           conv_child_temp.out_channels,
-                                                           conv_child_temp.kernel_size,
-                                                           stride=conv_child_temp.stride,
-                                                           padding=conv_child_temp.padding,
-                                                           dilation=conv_child_temp.dilation,
-                                                           groups=conv_child_temp.groups,
-                                                           bias=True,
-                                                           padding_mode=conv_child_temp.padding_mode,
-                                                           eps=child.eps,
-                                                           momentum=child.momentum,
-                                                           a_bits=a_bits,
-                                                           w_bits=w_bits,
-                                                           q_type=q_type,
-                                                           q_level=q_level,
-                                                           device=device,
-                                                           weight_observer=weight_observer)
-                    quant_bn_fuse_conv.bias.data = conv_child_temp.bias
-                else:
-                    quant_bn_fuse_conv = QuantBNFuseConv2d(conv_child_temp.in_channels,
-                                                           conv_child_temp.out_channels,
-                                                           conv_child_temp.kernel_size,
-                                                           stride=conv_child_temp.stride,
-                                                           padding=conv_child_temp.padding,
-                                                           dilation=conv_child_temp.dilation,
-                                                           groups=conv_child_temp.groups,
-                                                           bias=False,
-                                                           padding_mode=conv_child_temp.padding_mode,
-                                                           eps=child.eps,
-                                                           momentum=child.momentum,
-                                                           a_bits=a_bits,
-                                                           w_bits=w_bits,
-                                                           q_type=q_type,
-                                                           q_level=q_level,
-                                                           device=device,
-                                                           weight_observer=weight_observer)
-                quant_bn_fuse_conv.weight.data = conv_child_temp.weight
-                quant_bn_fuse_conv.gamma.data = child.weight
-                quant_bn_fuse_conv.beta.data = child.bias
-                quant_bn_fuse_conv.running_mean.copy_(child.running_mean)
-                quant_bn_fuse_conv.running_var.copy_(child.running_var)
-                quant_bn_fuse_conv.eps = child.eps
-                module._modules[conv_name_temp] = quant_bn_fuse_conv
-                module._modules[name] = nn.Identity()  #相当于一个容器，用以保存输入
-        elif isinstance(child, nn.ConvTranspose2d):
-            if child.bias is not None:
-                quant_conv_transpose = QuantConvTranspose2d(child.in_channels,
-                                                            child.out_channels,
-                                                            child.kernel_size,
-                                                            stride=child.stride,
-                                                            padding=child.padding,
-                                                            output_padding=child.output_padding,
-                                                            dilation=child.dilation,
-                                                            groups=child.groups,
+            if bn_fuse:  #若不是bn_fuse，则BN层不处理
+                if(flag==0): #是卷积层和BN融合
+                    if conv_child_temp.bias is not None:
+                        quant_bn_fuse_conv = QuantBNFuseConv2d(conv_child_temp.in_channels,
+                                                            conv_child_temp.out_channels,
+                                                            conv_child_temp.kernel_size,
+                                                            stride=conv_child_temp.stride,
+                                                            padding=conv_child_temp.padding,
+                                                            dilation=conv_child_temp.dilation,
+                                                            groups=conv_child_temp.groups,
                                                             bias=True,
-                                                            padding_mode=child.padding_mode,
+                                                            padding_mode=conv_child_temp.padding_mode,
+                                                            eps=child.eps,
+                                                            momentum=child.momentum,
                                                             a_bits=a_bits,
                                                             w_bits=w_bits,
                                                             q_type=q_type,
+                                                            q_level=q_level,
                                                             device=device,
-                                                            weight_observer=weight_observer,
-                                                            quant_inference=quant_inference)
-                quant_conv_transpose.bias.data = child.bias
-            else:
-                quant_conv_transpose = QuantConvTranspose2d(child.in_channels,
-                                                            child.out_channels,
-                                                            child.kernel_size,
-                                                            stride=child.stride,
-                                                            padding=child.padding,
-                                                            output_padding=child.output_padding,
-                                                            dilation=child.dilation,
-                                                            groups=child.groups,
+                                                            weight_observer=weight_observer)
+                        quant_bn_fuse_conv.bias.data = conv_child_temp.bias
+                    else:
+                        quant_bn_fuse_conv = QuantBNFuseConv2d(conv_child_temp.in_channels,
+                                                            conv_child_temp.out_channels,
+                                                            conv_child_temp.kernel_size,
+                                                            stride=conv_child_temp.stride,
+                                                            padding=conv_child_temp.padding,
+                                                            dilation=conv_child_temp.dilation,
+                                                            groups=conv_child_temp.groups,
                                                             bias=False,
-                                                            padding_mode=child.padding_mode,
+                                                            padding_mode=conv_child_temp.padding_mode,
+                                                            eps=child.eps,
+                                                            momentum=child.momentum,
                                                             a_bits=a_bits,
                                                             w_bits=w_bits,
                                                             q_type=q_type,
+                                                            q_level=q_level,
                                                             device=device,
-                                                            weight_observer=weight_observer,
-                                                            quant_inference=quant_inference)
-            quant_conv_transpose.weight.data = child.weight
-            module._modules[name] = quant_conv_transpose
+                                                            weight_observer=weight_observer)
+                    quant_bn_fuse_conv.weight.data = conv_child_temp.weight
+                    quant_bn_fuse_conv.gamma.data = child.weight
+                    quant_bn_fuse_conv.beta.data = child.bias
+                    quant_bn_fuse_conv.running_mean.copy_(child.running_mean)
+                    quant_bn_fuse_conv.running_var.copy_(child.running_var)
+                    quant_bn_fuse_conv.eps = child.eps
+                    module._modules[conv_name_temp] = quant_bn_fuse_conv
+                    module._modules[name] = nn.Identity()  #相当于一个容器，用以保存输入
+                elif(flag==1):  #则是反卷积层和BN融合
+                    if conv_child_temp.bias is not None:
+                        quant_bn_fuse_conv = QuantBNFuseConvTranspose2d(conv_child_temp.in_channels,
+                                                            conv_child_temp.out_channels,
+                                                            conv_child_temp.kernel_size,
+                                                            stride=conv_child_temp.stride,
+                                                            padding=conv_child_temp.padding,
+                                                            output_padding=conv_child_temp.output_padding,
+                                                            dilation=conv_child_temp.dilation,
+                                                            groups=conv_child_temp.groups,
+                                                            bias=True,
+                                                            padding_mode=conv_child_temp.padding_mode,
+                                                            eps=child.eps,
+                                                            momentum=child.momentum,
+                                                            a_bits=a_bits,
+                                                            w_bits=w_bits,
+                                                            q_type=q_type,
+                                                            q_level=q_level,
+                                                            device=device,
+                                                            weight_observer=weight_observer)
+                        quant_bn_fuse_conv.bias.data = conv_child_temp.bias
+                    else:
+                        quant_bn_fuse_conv = QuantBNFuseConvTranspose2d(conv_child_temp.in_channels,
+                                                            conv_child_temp.out_channels,
+                                                            conv_child_temp.kernel_size,
+                                                            stride=conv_child_temp.stride,
+                                                            padding=conv_child_temp.padding,
+                                                            output_padding=conv_child_temp.output_padding,
+                                                            dilation=conv_child_temp.dilation,
+                                                            groups=conv_child_temp.groups,
+                                                            bias=False,
+                                                            padding_mode=conv_child_temp.padding_mode,
+                                                            eps=child.eps,
+                                                            momentum=child.momentum,
+                                                            a_bits=a_bits,
+                                                            w_bits=w_bits,
+                                                            q_type=q_type,
+                                                            q_level=q_level,
+                                                            device=device,
+                                                            weight_observer=weight_observer)
+                    quant_bn_fuse_conv.weight.data = conv_child_temp.weight
+                    quant_bn_fuse_conv.gamma.data = child.weight
+                    quant_bn_fuse_conv.beta.data = child.bias
+                    quant_bn_fuse_conv.running_mean.copy_(child.running_mean)
+                    quant_bn_fuse_conv.running_var.copy_(child.running_var)
+                    quant_bn_fuse_conv.eps = child.eps
+                    module._modules[conv_name_temp] = quant_bn_fuse_conv
+                    module._modules[name] = nn.Identity()  #相当于一个容器，用以保存输入
+        elif isinstance(child, nn.ConvTranspose2d):
+            if bn_fuse:
+                conv_name_temp = name
+                conv_child_temp = child
+                flag=1
+            else:
+                if child.bias is not None:
+                    quant_conv_transpose = QuantConvTranspose2d(child.in_channels,
+                                                                child.out_channels,
+                                                                child.kernel_size,
+                                                                stride=child.stride,
+                                                                padding=child.padding,
+                                                                output_padding=child.output_padding,
+                                                                dilation=child.dilation,
+                                                                groups=child.groups,
+                                                                bias=True,
+                                                                padding_mode=child.padding_mode,
+                                                                a_bits=a_bits,
+                                                                w_bits=w_bits,
+                                                                q_type=q_type,
+                                                                device=device,
+                                                                weight_observer=weight_observer,
+                                                                quant_inference=quant_inference)
+                    quant_conv_transpose.bias.data = child.bias
+                else:
+                    quant_conv_transpose = QuantConvTranspose2d(child.in_channels,
+                                                                child.out_channels,
+                                                                child.kernel_size,
+                                                                stride=child.stride,
+                                                                padding=child.padding,
+                                                                output_padding=child.output_padding,
+                                                                dilation=child.dilation,
+                                                                groups=child.groups,
+                                                                bias=False,
+                                                                padding_mode=child.padding_mode,
+                                                                a_bits=a_bits,
+                                                                w_bits=w_bits,
+                                                                q_type=q_type,
+                                                                device=device,
+                                                                weight_observer=weight_observer,
+                                                                quant_inference=quant_inference)
+                quant_conv_transpose.weight.data = child.weight
+                module._modules[name] = quant_conv_transpose
         elif isinstance(child, nn.Linear):
             if child.bias is not None:
                 quant_linear = QuantLinear(child.in_features, child.out_features,
