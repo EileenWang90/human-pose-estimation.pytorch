@@ -310,6 +310,7 @@ class QuantConvTranspose2d(nn.ConvTranspose2d):
                  a_bits=8,
                  w_bits=8,
                  q_type=0,
+                 q_level=0,
                  device='cpu',
                  weight_observer=0,
                  quant_inference=False):

@@ -9,7 +9,7 @@ from __future__ import print_function
 
 import argparse
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='6'
+os.environ['CUDA_VISIBLE_DEVICES']='0,1'
 import pprint
 
 import torch
@@ -33,14 +33,15 @@ import dataset
 import models
 
 import quantize_dorefa
-# from quantize_iao import *
-from quantize_iao_uint import *  #对feature map进行uint对称量化
+from quantize_iao import *
+# from quantize_iao_uint import *  #对feature map进行uint对称量化
+import LSQquan
 
 def select_device(device='', apex=False, batch_size=None):
     # device = 'cpu' or '0' or '0,1,2,3'
     cpu_request = device.lower() == 'cpu'
     if device and not cpu_request:  # if device requested other than 'cpu'
-        os.environ['CUDA_VISIBLE_DEVICES'] = device  # set environment variable
+        # os.environ['CUDA_VISIBLE_DEVICES'] = device  # set environment variable
         assert torch.cuda.is_available(), 'CUDA unavailable, invalid device %s requested' % device  # check availablity
 
     cuda = False if cpu_request else torch.cuda.is_available()
@@ -67,7 +68,7 @@ def parse_args():
     # general
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        default='experiments/coco/resnet50/mobile_quant_relu_uint.yaml',
+                        default='experiments/coco/resnet50/mobile_quant_relu_lsq.yaml',
                         type=str)
 
     args, rest = parser.parse_known_args()
@@ -188,9 +189,12 @@ def main():
     #print('*******************ori_model*******************\n', model)
     if(config.QUANTIZATION.QUANT_METHOD == 1): # DoReFa
         quantize_dorefa.prepare(model, inplace=True, a_bits=config.QUANTIZATION.A_BITS, w_bits=config.QUANTIZATION.W_BITS, quant_inference=config.QUANTIZATION.QUANT_INFERENCE, is_activate=False)
-    else: #default quant_method == 0   IAO
-        prepare(model, inplace=True, a_bits=config.QUANTIZATION.A_BITS, w_bits=config.QUANTIZATION.W_BITS,q_type=config.QUANTIZATION.Q_TYPE, q_level=config.QUANTIZATION.Q_LEVEL, device=device,#device=next(model.parameters()).device, 
+    elif(config.QUANTIZATION.QUANT_METHOD == 0): #default quant_method == 0   IAO
+        prepare(model, inplace=True, a_bits=config.QUANTIZATION.A_BITS, w_bits=config.QUANTIZATION.W_BITS,q_type=config.QUANTIZATION.Q_TYPE, q_level=config.QUANTIZATION.Q_LEVEL, #device=device, 放了就会出错！ 
                             weight_observer=config.QUANTIZATION.WEIGHT_OBSERVER, bn_fuse=config.QUANTIZATION.BN_FUSE, quant_inference=config.QUANTIZATION.QUANT_INFERENCE)
+    elif(config.QUANTIZATION.QUANT_METHOD == 2): #LSQ
+        modules_to_replace = LSQquan.find_modules_to_quantize(model, quan_schedulerA=config.LSQACT, quan_schedulerW=config.LSQWEIGHT, quan_schedulerE=config.LSQEXPECTS)
+        model = LSQquan.replace_module_by_names(model, modules_to_replace)
     #print('\n*******************quant_model*******************\n', model)
     print('\n*******************Using quant_model in test*******************\n')
     
@@ -200,7 +204,7 @@ def main():
             model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
             #model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=torch.device('cuda'))['state_dict'])
             model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device)['state_dict'])
-            #torch.save(model.module.state_dict(), 'output/coco_quan/mobile_quant_relu_w8a8_bnfuse0/checkpoint_nomodule.pth.tar')
+            # torch.save(model.module.state_dict(), 'output/coco_quan/mobile_quant_relu_lsq_w8a8_bnfuse0/checkpoint_nomodule.pth.tar')
         elif(config.TEST.MODEL_FILE.split('/')[-1]=='model_best.pth.tar'):  #multiGPU has model.module.
             model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
             model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device))

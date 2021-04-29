@@ -285,6 +285,15 @@ def main():
         stages_repeats, stages_out_channels,
         is_train=False
     )
+
+    ####################################### bnfuse model ############################################
+    bnfuse_model = eval('models.pose_mobilenet_relu_bnfuse.get_pose_net')(
+        config, 
+        stages_repeats, stages_out_channels,
+        is_train=False
+    )
+    #################################################################################################
+
     gpus = [int(i) for i in config.GPUS.split(',')]
     device = select_device(config.GPUS, batch_size=config.TEST.BATCH_SIZE*len(gpus))
 

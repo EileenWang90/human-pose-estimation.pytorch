@@ -1,4 +1,4 @@
-GPUS: '0,1'
+GPUS: '0'
 DATA_DIR: ''
 OUTPUT_DIR: 'output'
 LOG_DIR: 'log'
@@ -14,8 +14,8 @@ DATASET:
   ROT_FACTOR: 40
   SCALE_FACTOR: 0.3
 MODEL:
-  NAME: 'pose_mobilenet_relu'
-  PRETRAINED:  'output/coco/256x192_d256x3_adam_lr1e-3_mobile8_relu/final_state.pth.tar' # 'models/mobilenetv2_0.5-eaa6f9ad.pth'  Ultralight-Nano-SimplePose.pth  Ultralight-Nano-SimplePose_0.65259.pth
+  NAME: 'pose_mobilenet_relu_bnfuse' #'pose_mobilenet_relu'
+  PRETRAINED:  #'output/coco/256x192_d256x3_adam_lr1e-3_mobile8_relu/final_state.pth.tar' # 'models/mobilenetv2_0.5-eaa6f9ad.pth'  Ultralight-Nano-SimplePose.pth  Ultralight-Nano-SimplePose_0.65259.pth
   IMAGE_SIZE:
   - 192
   - 256
@@ -64,7 +64,7 @@ TEST:
   FLIP_TEST: false
   IMAGE_THRE: 0.0
   IN_VIS_THRE: 0.2
-  MODEL_FILE: ''
+  MODEL_FILE: 'output/weights_quan/float_mobilenetpose_nobn_refactor.pt'  #'output/weights_quan/float_mobilenetpose_nobn.pt'
   NMS_THRE: 1.0
   OKS_THRE: 0.9
   USE_GT_BBOX: true

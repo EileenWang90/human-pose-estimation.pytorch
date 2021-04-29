@@ -64,8 +64,8 @@ TEST:
   FLIP_TEST: false
   IMAGE_THRE: 0.0
   IN_VIS_THRE: 0.2
-  MODEL_FILE: 'output/coco_quan/mobile_quant_relu_w8a8_bnfuse1/final_state0.pth.tar'
-  NMS_THRE: 1.0
+  MODEL_FILE: 'output/weights_quan/int8_mobilenet8_relu_bnfuse_inference.pt' #'output/coco_quan/mobile_quant_relu_int_w8a8_bnfuse1/final_state.pth.tar'
+  NMS_THRE: 1.0  #'output/weights_quan/int8_mobilenet8_relu_bnfuse_inference.pt' 'output/weights_quan/float_mobilenetpose_nobn.pt'
   OKS_THRE: 0.9
   USE_GT_BBOX: true
 DEBUG:

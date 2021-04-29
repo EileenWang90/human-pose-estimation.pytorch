@@ -11,7 +11,7 @@ from __future__ import print_function
 
 import argparse
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='0,1'
+os.environ['CUDA_VISIBLE_DEVICES']='1'
 import pprint
 
 import torch
@@ -40,7 +40,7 @@ def parse_args():
     # general
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        required=True,
+                        default='experiments/coco/resnet50/256x192_d256x3_adam_lr1e-3_mobile.yaml',
                         type=str)
 
     args, rest = parser.parse_known_args()
@@ -128,7 +128,11 @@ def main():
         is_train=False
     )
     model = model.cuda()
-    summary(model,input_size=(3, 256, 192))
+    # summary(model,input_size=(3, 256, 192))
+    # print(model)
+    # for n,param_tensor in enumerate(model.state_dict()):
+    #     #打印 key value字典
+    #     print(n, param_tensor,'\t',model.state_dict()[param_tensor].size())
 
     # if config.TEST.MODEL_FILE:
     #     logger.info('=> loading model from {}'.format(config.TEST.MODEL_FILE))
@@ -153,7 +157,9 @@ def main():
             model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
             model.state_dict(torch.load(config.TEST.MODEL_FILE))
         else:
-            model.load_state_dict(torch.load(config.TEST.MODEL_FILE))
+            # model.load_state_dict(torch.load(config.TEST.MODEL_FILE)['model'], strict=False) #保存的no bn版本的权重导入
+            model.load_state_dict(torch.load(config.TEST.MODEL_FILE)['model']) #保存的no bn版本的权重导入
+            # model.load_state_dict(torch.load(config.TEST.MODEL_FILE))
             gpus = [int(i) for i in config.GPUS.split(',')]
             model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
     else:
@@ -191,6 +197,11 @@ def main():
     # evaluate on validation set
     validate(config, valid_loader, valid_dataset, model, criterion,
              final_output_dir, tb_log_dir)
+
+    print(len(models.pose_mobilenet_relu_bnfuse.fmap_block['input']))
+    print(models.pose_mobilenet_relu_bnfuse.fmap_block['input'][0].shape)
+    print(len(models.pose_mobilenet_relu_bnfuse.fmap_block['output']))
+    print(models.pose_mobilenet_relu_bnfuse.fmap_block['output'][0].shape)
 
 
 if __name__ == '__main__':

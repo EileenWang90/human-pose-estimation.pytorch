@@ -103,12 +103,14 @@ venv.bak/
 
 /data
 #!/output/coco/*mobile*/*.log
-!/output/coco/*mobile*/*.pth.tar
+# !/output/coco/*mobile*/*.pth.tar
 /output/*/*/results/*
 /output/coco/256x192_d256x3_adam_lr1e-3/
 *.jpg
 /models
 /log/coco_quan
+*.out
+*.pth.tar
 
 .vscode/
 .nfs*

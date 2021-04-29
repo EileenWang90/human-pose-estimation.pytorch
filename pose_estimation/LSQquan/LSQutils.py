@@ -66,6 +66,7 @@ def find_modules_to_quantize(model, quan_schedulerA,quan_schedulerW,quan_schedul
                 #                         quan_schedulerE[name].act)
                 # )
             else:
+                print(module)
                 replaced_modules[name] = QuanModuleMapping[type(module)](
                     module,
                     quan_w_fn=quantizer(quan_schedulerW),

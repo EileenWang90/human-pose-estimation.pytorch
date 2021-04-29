@@ -7,7 +7,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='4,6,7'
+os.environ['CUDA_VISIBLE_DEVICES']='0,1'
 import argparse
 import pprint
 import shutil
@@ -176,20 +176,17 @@ def main():
     device = select_device(config.GPUS, batch_size=config.TEST.BATCH_SIZE*len(gpus))
     #model = model.to(device)
     
-    ######################## 使用float版本的weight.pt时 ##################################   这时用两块GPU test结果还是0
-    if(~args.noresume):
-        is_train = False
-        model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
-        #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
-        print('Load model weight from',config.MODEL.PRETRAINED)
+    # ######################## 使用float版本的weight.pt时 ##################################   这时用两块GPU test结果还是0
+    # if(~args.noresume):
+    #     is_train = False
+    #     model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
+    #     #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
+    #     print('Load model weight from',config.MODEL.PRETRAINED)
 
     #################################### For LSQ ##########################################
     # lsq_config={'act':{'mode':'lsq', 'bit':4, 'perchannel': 'false', 'symmetric': 'false',  'all_positive': 'true'},
     #             'weight':{'mode':'lsq', 'bit':4, 'perchannel': 'true', 'symmetric': 'false',  'all_positive': 'false'},
     #             'expects':{} }
-    lsq_config={'act':{'mode':'lsq', 'bit':4, 'perchannel': False, 'symmetric': False,  'all_positive': True},
-                'weight':{'mode':'lsq', 'bit':4, 'perchannel': True, 'symmetric': False,  'all_positive': False},
-                'expects':{} }
 
     ################################## quantization model #################################
     # print('*******************ori_model*******************\n', model)
@@ -205,13 +202,16 @@ def main():
     print('\n*******************quant_model*******************\n', model)
     print('\n*******************Using quant_model in test*******************\n')
 
-    # ####################### 使用量化版本的weight.pt时 ##################################
-    # if(~args.noresume):
-    #     is_train = False
-    #     print(device) #cuda:0   device=torch.device('cuda:0')
-    #     model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
-    #     #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
-    #     print('Load model weight from',config.MODEL.PRETRAINED)
+    ####################### 使用量化版本的weight.pt时 ##################################
+    if(~args.noresume):
+        is_train = False
+        print(device) #cuda:0   device=torch.device('cuda:0')
+        if(config.MODEL.PRETRAINED.split('/')[-1]=='checkpoint.pth.tar'):
+            model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device)['state_dict'])
+        else:
+            model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
+        #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
+        print('Load model weight from',config.MODEL.PRETRAINED)
 
     # copy model file
     this_dir = os.path.dirname(__file__)

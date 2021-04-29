@@ -1,4 +1,4 @@
-GPUS: '0,1,2'
+GPUS: '0,1'
 DATA_DIR: ''
 OUTPUT_DIR: 'output'
 LOG_DIR: 'log'
@@ -15,8 +15,8 @@ DATASET:
   SCALE_FACTOR: 0.3
 MODEL:
   NAME: 'pose_mobilenet_relu' #'pose_resnet' 
-  PRETRAINED: 'output/coco_quan/mobile_quant_relu_w8a8_bnfuse0_int/final_state_560.pth.tar' #'output/coco/256x192_d256x3_adam_lr1e-3_mobile8_relu/final_state.pth.tar'  output/coco_quan/mobile_quant_relu_w8a8_bnfuse0_resume/final_state.pth.tar
-  IMAGE_SIZE:                                                                           #output/coco_quan/mobile_quant_relu_w8a8_bnfuse0/final_state_560.pth.tar
+  PRETRAINED: 'output/coco_quan/mobile_quant_relu_lsq_w4a8_bnfuse0/final_state_140.pth.tar' #'output/coco/256x192_d256x3_adam_lr1e-3_mobile8_relu/final_state_560.pth.tar'  output/coco_quan/mobile_quant_relu_w8a8_bnfuse0_resume/final_state.pth.tar
+  IMAGE_SIZE:                                                                           
   - 192
   - 256
   NUM_JOINTS: 17
@@ -41,7 +41,7 @@ MODEL:
 LOSS:
   USE_TARGET_WEIGHT: true
 TRAIN:
-  BATCH_SIZE: 64
+  BATCH_SIZE: 256
   SHUFFLE: true
   BEGIN_EPOCH: 0
   END_EPOCH: 140
@@ -64,7 +64,7 @@ TEST:
   FLIP_TEST: false
   IMAGE_THRE: 0.0
   IN_VIS_THRE: 0.2
-  MODEL_FILE: 'output/coco_quan/mobile_quant_relu_w8a8_bnfuse1/final_state0.pth.tar'
+  MODEL_FILE: 'output/coco_quan/mobile_quant_relu_lsq_w4a8_bnfuse0/model_best.pth.tar'
   NMS_THRE: 1.0
   OKS_THRE: 0.9
   USE_GT_BBOX: true
@@ -76,7 +76,7 @@ DEBUG:
   SAVE_HEATMAPS_PRED: true
 QUANTIZATION:
   W_BITS: 4
-  A_BITS: 4
+  A_BITS: 8
   BN_FUSE: 0
   Q_TYPE: 0
   Q_LEVEL: 0
@@ -98,7 +98,7 @@ LSQWEIGHT: # (default for all layers)
   # Quantizer type (choices: lsq)
   mode: lsq
   # Bit width of quantized weight
-  bit: 8
+  bit: 4
   # Each output channel uses its own scaling factor
   per_channel: true
   # Whether to use symmetric quantization
