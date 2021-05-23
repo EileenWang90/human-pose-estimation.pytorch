@@ -95,7 +95,7 @@ def train(config, train_loader, model, criterion, optimizer, epoch,
 
 
 def validate(config, val_loader, val_dataset, model, criterion, output_dir,
-             tb_log_dir, writer_dict=None):
+             tb_log_dir, writer_dict=None, int_adjust=False):
     batch_time = AverageMeter()
     losses = AverageMeter()
     acc = AverageMeter()
@@ -115,6 +115,18 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
     with torch.no_grad():
         end = time.time()
         for i, (input, target, target_weight, meta) in enumerate(val_loader):
+            
+            # print(input.shape,torch.max(input), torch.min(input), torch.mean(input)) #tensor(2.6400) tensor(-2.1179) tensor(-0.4463)
+            # print(input)
+            if(int_adjust==True):
+                input = torch.round(input *127.5/2.64).clamp_(-128,127) #从[-2.1179，2.64] 映射到 [-540,673]
+                # print(input[0])
+                qfeaturemap0=input[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,input[0].shape[0]) #[3,256,192]->[256,192,3]->[256*192,3]
+                np.savetxt('output/weights_quan/postquant/'+'qinput0.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
+            print(input.shape,torch.max(input), torch.min(input), torch.mean(input.abs())) #torch.Size([128, 3, 256, 192]) tensor(127.) tensor(-102.) tensor(-21.4869)
+            # for i in range(input.shape[0]):
+            #     print(input[i].shape,torch.max(input[i]), torch.min(input[i]), torch.mean(input[i].abs())) #torch.Size([128, 3, 256, 192]) tensor(127.) tensor(-102.) tensor(-21.4869)
+
             # compute output
             output = model(input)
             if config.TEST.FLIP_TEST:

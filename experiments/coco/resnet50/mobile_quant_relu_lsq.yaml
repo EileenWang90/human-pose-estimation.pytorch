@@ -15,7 +15,7 @@ DATASET:
   SCALE_FACTOR: 0.3
 MODEL:
   NAME: 'pose_mobilenet_relu' #'pose_resnet' 
-  PRETRAINED: 'output/coco_quan/mobile_quant_relu_lsq_w4a8_bnfuse0/final_state_140.pth.tar' #'output/coco/256x192_d256x3_adam_lr1e-3_mobile8_relu/final_state_560.pth.tar'  output/coco_quan/mobile_quant_relu_w8a8_bnfuse0_resume/final_state.pth.tar
+  PRETRAINED: 'output/coco_quan/mobile_quant_relu_lsq_w4a8_bnfuse0/final_state_280.pth.tar' #'output/coco/256x192_d256x3_adam_lr1e-3_mobile8_relu/final_state_560.pth.tar'  output/coco_quan/mobile_quant_relu_w8a8_bnfuse0_resume/final_state.pth.tar
   IMAGE_SIZE:                                                                           
   - 192
   - 256

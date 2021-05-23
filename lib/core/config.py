@@ -241,7 +241,7 @@ def get_model_name(cfg):
     name = cfg.MODEL.NAME
     full_name = cfg.MODEL.NAME
     extra = cfg.MODEL.EXTRA
-    if name in ['pose_resnet', 'pose_shufflenetv2', 'pose_shufflenetv2_short', 'pose_mobilenet', 'pose_mobilenet_8', 'pose_mobilenet_relu', 'pose_mobilenet_relu_bnfuse']:
+    if name in ['pose_resnet', 'pose_shufflenetv2', 'pose_shufflenetv2_short', 'pose_mobilenet', 'pose_mobilenet_8', 'pose_mobilenet_relu', 'pose_mobilenet_allrelu', 'pose_mobilenet_relu_bnfuse']:
         name = '{model}_{num_layers}'.format(
             model=name,
             num_layers=extra.NUM_LAYERS)

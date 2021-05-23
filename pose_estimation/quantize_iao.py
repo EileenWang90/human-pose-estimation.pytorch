@@ -7,7 +7,11 @@ from torch import distributed
 from torch.nn import init
 from torch.nn.parameter import Parameter
 from torch.autograd import Function
+import numpy as np
 
+convert_path='/home/ytwang/wyt_workspace/quantization/human-pose-estimation.pytorch/output/weights_quan/'
+Mkey_load = list(np.load(convert_path+'M_key.npy', allow_pickle=True))    #type:np.ndarray ->list  是59层名称的列表
+Mkey_count=0
 
 # ********************* observers(统计min/max) *********************
 class ObserverBase(nn.Module):
@@ -186,13 +190,19 @@ class Quantizer(nn.Module):
 
             output = (torch.clamp(self.round(input / self.scale - self.zero_point),
                                   self.quant_min_val, self.quant_max_val) + self.zero_point) * self.scale #和公式里的zero_point的加减号正好是相反的
+            qoutput= torch.clamp(self.round(input / self.scale - self.zero_point),self.quant_min_val, self.quant_max_val) + self.zero_point
             #print('output.device:',output.device)
-        return output
+            # print("scale:",self.scale.flatten(), "zero_point:",self.zero_point.flatten(), "min:", self.quant_min_val, "max:",self.quant_max_val)
+            # print("qoutput:", qoutput.shape, qoutput)
+            # qfeaturemap=qoutput[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,qoutput[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
+            # np.savetxt('output/weights_quan/beforebnfuse/'+'feature_qoutput.txt', qfeaturemap, fmt="%d", delimiter='  ') 
+        return output,qoutput
+        # return output
 
 class SignedQuantizer(Quantizer):
     def __init__(self, *args, **kwargs):
         super(SignedQuantizer, self).__init__(*args, **kwargs)
-        self.quant_min_val = torch.tensor((-(1 << (self.bits - 1))), device=self.observer.device)
+        self.quant_min_val = torch.tensor((-(1 << (self.bits - 1))), device=self.observer.device) #int8 [-128,127]
         self.quant_max_val = torch.tensor(((1 << (self.bits - 1)) - 1), device=self.observer.device)
 
 class UnsignedQuantizer(Quantizer):
@@ -206,9 +216,9 @@ class SymmetricQuantizer(SignedQuantizer):
     def update_qparams(self):
         # quantized_range
         if self.activation_weight_flag == 0: 
-            quant_range = float(torch.min(torch.abs(self.quant_min_val), torch.abs(self.quant_max_val)))    # weight    remove outier？        
+            quant_range = float(torch.min(torch.abs(self.quant_min_val), torch.abs(self.quant_max_val)))    # weight    remove outier？没有这个效果，quant_max/min是确定的呀       
         else: # self.activation_weight_flag=1 or 2                          
-            quant_range = float(self.quant_max_val - self.quant_min_val) / 2                                # activation  w&a处理不相同
+            quant_range = float(self.quant_max_val - self.quant_min_val) / 2                                # activation  w&a处理不相同 127-(-128)=127.5
         float_range = torch.max(torch.abs(self.observer.min_val), torch.abs(self.observer.max_val)).to(self.quant_min_val.device)     # float_range #multiGPU
         self.scale = float_range / quant_range                                                          # scale
         self.scale = torch.max(self.scale, self.eps)                                                    # processing for very small scale  scale不能小于float32所能表示的最小值
@@ -285,7 +295,19 @@ class QuantConv2d(nn.Conv2d):
                                                                 q_level='L', out_channels=None, device=device), activation_weight_flag=2)
 
     def forward(self, input):
-        quant_input = self.activation_quantizer(input)
+        # quant_input = self.activation_quantizer(input)
+
+        quant_input,quant_input_int = self.activation_quantizer(input)
+        # quant_weight,quant_weight_int = self.weight_quantizer(self.weight)
+       
+        global Mkey_count
+        print("Total(float):", quant_input.mean(), quant_input.min(), quant_input.max())
+        print("Total(q):", quant_input_int.mean(), quant_input_int.min(), quant_input_int.max())
+        print("quant_input_int", quant_input_int.shape, quant_input_int)
+        qfeaturemap0=quant_input_int[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
+        np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qinput0.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
+        Mkey_count +=1
+
         if not self.quant_inference:
             quant_weight = self.weight_quantizer(self.weight)
         else:
@@ -461,8 +483,45 @@ class QuantBNFuseConv2d(QuantConv2d):
             weight_fused = self.weight * reshape_to_weight(self.gamma / torch.sqrt(self.running_var + self.eps))                      # w融running
 
         # 量化A和bn融合后的W
-        quant_input = self.activation_quantizer(input)
-        quant_weight = self.weight_quantizer(weight_fused)
+        # quant_input= self.activation_quantizer(input)
+        # # print("before weight", weight_fused.mean(), weight_fused.min(), weight_fused.max(), weight_fused.shape)
+        # quant_weight= self.weight_quantizer(weight_fused)
+        # # print("after weight:", quant_weight.mean(), quant_weight.min(), quant_weight.max(), "\nError:",(weight_fused-quant_weight).mean(), (weight_fused-quant_weight).max())
+        # #bias不需要截至[-128,127] 注意这儿的bias是对称量化的表示方式，表达式中并没有zero_point
+        # bias_fused = Round.apply(bias_fused / (self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale))*(self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale) 
+
+        global Mkey_count
+        print("At first:", input.mean(), input.min(), input.max(), input.shape)
+        quant_input,quant_input_int = self.activation_quantizer(input)
+        quant_weight,quant_weight_int = self.weight_quantizer(weight_fused)
+        quant_bias_int = Round.apply(bias_fused / (self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale)) #bias不需要截至[-128,127]
+        quant_bias = quant_bias_int*(self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale)
+        bias_fused = quant_bias
+        print(torch.mean(quant_bias-bias_fused),torch.max(quant_bias-bias_fused))
+
+        print("Total(float):", quant_input.mean(), quant_input.min(), quant_input.max())
+        print("Total(q):", quant_input_int.mean(), quant_input_int.min(), quant_input_int.max())
+        # for i in range(quant_input_int.shape[0]):
+        #     print(i, quant_input_int[i].mean(), quant_input_int[i].min(), quant_input_int[i].max())
+        # quant_input_int
+        print("quant_input_int", quant_input_int.shape, quant_input_int)
+        qfeaturemap0=quant_input_int[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
+        # qfeaturemap1=quant_input_int[1].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
+        # qfeaturemap2=quant_input_int[2].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
+        # qfeaturemap3=quant_input_int[3].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
+        np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qinput0.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
+        # np.savetxt('output/weights_quan/beforebnfuse/'+'feature_qinput1.txt', qfeaturemap1, fmt="%d", delimiter='  ') 
+        # np.savetxt('output/weights_quan/beforebnfuse/'+'feature_qinput2.txt', qfeaturemap2, fmt="%d", delimiter='  ') 
+        # np.savetxt('output/weights_quan/beforebnfuse/'+'feature_qinput3.txt', qfeaturemap3, fmt="%d", delimiter='  ') 
+        # # quant_weight_int
+        # print("quant_weight_int", quant_weight_int.shape, quant_weight_int)
+        # print("quant_bias_int", quant_bias_int.shape, quant_bias_int)
+        # qweight=quant_weight_int.detach().cpu().numpy().reshape(quant_weight_int.shape[0],-1) #[16,1,3,3]->[16,9]  [16,8,1,1]->[16,8] 
+        # np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qweight.txt', qweight, fmt="%d", delimiter='  ') 
+        # qbias=quant_bias_int.detach().cpu().numpy().reshape(-1) 
+        # np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qbias.txt', qbias, fmt="%d", delimiter='  ') 
+        Mkey_count += 1 
+
         # 量化卷积
         if self.training:  # 训练态
             output = F.conv2d(quant_input, quant_weight, None, self.stride, self.padding, self.dilation,
@@ -569,8 +628,34 @@ class QuantBNFuseConvTranspose2d(QuantConvTranspose2d):
             weight_fused = self.weight * reshape_to_weight(self.gamma / torch.sqrt(self.running_var + self.eps))                      # w融running
 
         # 量化A和bn融合后的W
-        quant_input = self.activation_quantizer(input)
-        quant_weight = self.weight_quantizer(weight_fused)
+        # quant_input = self.activation_quantizer(input)
+        # quant_weight = self.weight_quantizer(weight_fused)
+        # #bias不需要截至[-128,127] 注意这儿的bias是对称量化的表示方式，表达式中并没有zero_point
+        # bias_fused = Round.apply(bias_fused / (self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale))*(self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale) 
+
+        quant_input,quant_input_int = self.activation_quantizer(input)
+        quant_weight,quant_weight_int = self.weight_quantizer(weight_fused)
+
+        global Mkey_count
+        quant_bias_int = Round.apply(bias_fused / (self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale)) #bias不需要截至[-128,127]
+        quant_bias = quant_bias_int*(self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale)
+        bias_fused = quant_bias
+        # print(torch.mean(quant_bias-bias_fused),torch.max(quant_bias-bias_fused))
+
+        # print("Total(float):", quant_input.mean(), quant_input.min(), quant_input.max())
+        # print("Total(q):", quant_input_int.mean(), quant_input_int.min(), quant_input_int.max())
+        # print("quant_input_int", quant_input_int.shape, quant_input_int)
+        qfeaturemap0=quant_input_int[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
+        np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qinput0.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
+        # # quant_weight_int
+        # print("quant_weight_int", quant_weight_int.shape, quant_weight_int)
+        # print("quant_bias_int", quant_bias_int.shape, quant_bias_int)
+        # qweight=quant_weight_int.detach().cpu().numpy().reshape(quant_weight_int.shape[0],-1) #[16,1,3,3]->[16,9]  [16,8,1,1]->[16,8] 
+        # np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qweight.txt', qweight, fmt="%d", delimiter='  ') 
+        # qbias=quant_bias_int.detach().cpu().numpy().reshape(-1) 
+        # np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qbias.txt', qbias, fmt="%d", delimiter='  ') 
+        Mkey_count += 1 
+
         # 量化卷积
         if self.training:  # 训练态
             output = F.conv_transpose2d(quant_input, quant_weight, self.bias, self.stride, self.padding, self.output_padding,
@@ -653,7 +738,20 @@ class QuantReLU(nn.ReLU):
                                                             q_level='L', out_channels=None, device=device), activation_weight_flag=2)
 
     def forward(self, input):
-        quant_input = self.activation_quantizer(input)
+        # quant_input = self.activation_quantizer(input)
+        quant_input,quant_input_int = self.activation_quantizer(input)
+
+        print("Total(float):", quant_input.mean(), quant_input.min(), quant_input.max())
+        print("Total(q):", quant_input_int.mean(), quant_input_int.min(), quant_input_int.max())
+        # for i in range(quant_input_int.shape[0]):
+        #     print(i, quant_input_int[i].mean(), quant_input_int[i].min(), quant_input_int[i].max())
+
+        # quant_input_int
+        global Mkey_count
+        print("quant_relu_int", quant_input_int.shape, quant_input_int)
+        qfeaturemap0=quant_input_int[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
+        np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count-1]+'_qinput_relu.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
+
         output = F.relu(quant_input, self.inplace)
         return output
 
@@ -777,7 +875,7 @@ def add_quant_op(module, a_bits=8, w_bits=8, q_type=0, q_level=0, device='cpu',
                                                             q_type=q_type,
                                                             q_level=q_level,
                                                             device=device,
-                                                            weight_observer=weight_observer)
+                                                            weight_observer=weight_observer)  
                         quant_bn_fuse_conv.bias.data = conv_child_temp.bias
                     else:
                         quant_bn_fuse_conv = QuantBNFuseConv2d(conv_child_temp.in_channels,

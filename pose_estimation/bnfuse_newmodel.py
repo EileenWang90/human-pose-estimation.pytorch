@@ -10,7 +10,7 @@ from __future__ import print_function
 
 import argparse
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='2'
+os.environ['CUDA_VISIBLE_DEVICES']='4'
 import pprint
 
 import torch
@@ -173,7 +173,7 @@ def parse_args():
     # general
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        default='experiments/coco/resnet50/mobile_quant_relu_int.yaml',
+                        default='experiments/coco/resnet50/mobile_quant_allrelu_int.yaml',
                         type=str)
 
     args, rest = parser.parse_known_args()
@@ -309,31 +309,31 @@ def main():
     #print('\n*******************quant_model*******************\n', model)
     print('\n*******************Using quant_model in test*******************\n')
     
-    # if config.TEST.MODEL_FILE:
-    #     logger.info('=> loading model from {}'.format(config.TEST.MODEL_FILE))
-    #     if(config.TEST.MODEL_FILE.split('/')[-1]=='checkpoint.pth.tar'):
-    #         model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
-    #         #model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=torch.device('cuda'))['state_dict'])
-    #         model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device)['state_dict'])
-    #         #torch.save(model.module.state_dict(), 'output/coco_quan/mobile_quant_relu_w8a8_bnfuse0/checkpoint_nomodule.pth.tar')
-    #     elif(config.TEST.MODEL_FILE.split('/')[-1]=='model_best.pth.tar'):  #multiGPU has model.module.
-    #         model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
-    #         model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device))
-    #     elif(config.TEST.MODEL_FILE.split('/')[-1]=='checkpoint_resave.pth.tar'):  #multiGPU has model.module.
-    #         model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
-    #         model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device))
-    #     else:  #final_state.pth.tar
-    #         model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device))
-    #         model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
-    # else:
-    #     model_state_file = os.path.join(final_output_dir,
-    #                                     'final_state.pth.tar')
-    #     logger.info('=> loading model from {}'.format(model_state_file))
-    #     #print('0:',next(model.parameters()).device) #查看模型在CPU还是GPU上  cpu
-    #     model.load_state_dict(torch.load(model_state_file, map_location=device),strict=False)
-    #     #print('1:',next(model.parameters()).device) #查看模型在CPU还是GPU上  cpu
-    #     model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
-    #     #print('2:',next(model.parameters()).device) #查看模型在CPU还是GPU上  cuda:0
+    if config.TEST.MODEL_FILE:
+        logger.info('=> loading model from {}'.format(config.TEST.MODEL_FILE))
+        if(config.TEST.MODEL_FILE.split('/')[-1]=='checkpoint.pth.tar'):
+            model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+            #model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=torch.device('cuda'))['state_dict'])
+            model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device)['state_dict'])
+            #torch.save(model.module.state_dict(), 'output/coco_quan/mobile_quant_relu_w8a8_bnfuse0/checkpoint_nomodule.pth.tar')
+        elif(config.TEST.MODEL_FILE.split('/')[-1]=='model_best.pth.tar'):  #multiGPU has model.module.
+            model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+            model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device))
+        elif(config.TEST.MODEL_FILE.split('/')[-1]=='checkpoint_resave.pth.tar'):  #multiGPU has model.module.
+            model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+            model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device))
+        else:  #final_state.pth.tar
+            model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device))
+            model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+    else:
+        model_state_file = os.path.join(final_output_dir,
+                                        'final_state.pth.tar')
+        logger.info('=> loading model from {}'.format(model_state_file))
+        #print('0:',next(model.parameters()).device) #查看模型在CPU还是GPU上  cpu
+        model.load_state_dict(torch.load(model_state_file, map_location=device),strict=False)
+        #print('1:',next(model.parameters()).device) #查看模型在CPU还是GPU上  cpu
+        model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+        #print('2:',next(model.parameters()).device) #查看模型在CPU还是GPU上  cuda:0
 
     model.to(device)
     # ********************* quant_bn_fused_model_inference **********************
@@ -341,10 +341,11 @@ def main():
     # print('\n*******************For inference bn_fuse quant_model*******************\n', model)
     ckpt = {'model': model.module.state_dict() if hasattr(model, 'module') else model.state_dict()}
     # torch.save(ckpt, 'output/weights_quan/int8_mobilenet8_relu_bnfuse_inference.pt')
+    torch.save(ckpt, 'output/weights_quan/int8_mobilenet8_allrelu_bnfuse_inference.pt')
 
-    logger.info('=> loading model from {}'.format(config.TEST.MODEL_FILE))
-    model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device)['model'])  ##为什么还在'model'里面呀？
-    model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+    # logger.info('=> loading model from {}'.format(config.TEST.MODEL_FILE))
+    # model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device)['model'])  ##为什么还在'model'里面呀？
+    # model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
 
     # model.to(device)
     # summary(model,input_size=(3, 256, 192))

@@ -9,7 +9,7 @@ from __future__ import print_function
 
 import argparse
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='0,1'
+os.environ['CUDA_VISIBLE_DEVICES']='0'
 import pprint
 
 import torch
@@ -68,7 +68,7 @@ def parse_args():
     # general
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        default='experiments/coco/resnet50/mobile_quant_relu_lsq.yaml',
+                        default='experiments/coco/resnet50/mobile_quant_relu_int.yaml',
                         type=str)
 
     args, rest = parser.parse_known_args()
@@ -184,6 +184,7 @@ def main():
     device = select_device(config.GPUS, batch_size=config.TEST.BATCH_SIZE*len(gpus))
 
     model = model.to(device)
+    #print(model)
     # summary(model,input_size=(3, 256, 192))
 
     #print('*******************ori_model*******************\n', model)
@@ -212,7 +213,7 @@ def main():
             model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
             model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device))
         else:  #final_state.pth.tar
-            model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device))
+            model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device))  #['model']
             model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
     else:
         model_state_file = os.path.join(final_output_dir,

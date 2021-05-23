@@ -26,16 +26,93 @@ import numpy as np
 
 ############################## int推断时进行数据调整 #########################
 # 先使用浮点值进行数据验算
-M_path='/home/ytwang/wyt_workspace/quantization/human-pose-estimation.pytorch/output/weights_quan/M_refactor.npy'
-M_list = np.load(M_path, allow_pickle=True)
+convert_path='/home/ytwang/wyt_workspace/quantization/human-pose-estimation.pytorch/output/weights_quan/'
+M_list = np.load(convert_path+'M_refactor.npy', allow_pickle=True) #量化感知训练得到的scale
+#M_list = np.load(convert_path+'post_Mrefactor.npy', allow_pickle=True)  #后量化得到的scale
+
+# wscale_list=np.save(convert_path+'wscale.npy', allow_pickle=True) #这句代码还有问题，是不是还要调整格式呀？
+oscale_list = np.load(convert_path+'oscale.npy', allow_pickle=True)
+ascale_list = np.load(convert_path+'ascale.npy', allow_pickle=True)
+Mkey_load = list(np.load(convert_path+'M_key.npy', allow_pickle=True))    #type:np.ndarray ->list  是59层名称的列表
+# Mkey_load=list(Mkey_load)
 
 def int_adjust(data, Mkey, adjust=False):  #包括层量化和通道量化
     # print(M_list.item()[Mkey].shape, Mkey) #, M_list.item()[Mkey]) # torch.Size([16]) 
     # print(data.shape) #conv1 torch.Size([128, 16, 128, 96])
+    result_path='output/weights_quan/validate/' #validate postquant
     if(adjust==True and Mkey=='final_layer'): #最后一层直接进行浮点计算 不需要舍入和截断
+        # print('It is final layer in intmodel.')
         data = data * M_list.item()[Mkey].to(data.device) #.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
+        # # tmp=data[0].detach().cpu().numpy().reshape(data[0].shape[0],-1)
+        # tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(data[0].shape[0],-1)
+        # np.savetxt(result_path+'feature_intfinal_output.txt', tmp, fmt="%f", delimiter='  ') 
+        # print(time)
+
     elif(adjust==True): #如果进行int计算，则需要*M并截断操作； 否则不对数据进行处理
         data = torch.round(data * M_list.item()[Mkey].to(data.device)).clamp_(-128, 127)#.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
+        # # Mkey_1=Mkey_load[Mkey_load.index(Mkey)+1] #后一层的ascale
+        # # M_true=ascale_list.item()[Mkey]*wscale_list.item()[Mkey]/ascale_list.item()[Mkey_1]
+        # # print("M_true:",M_true,ascale_list.item()[Mkey], wscale_list.item()[Mkey], ascale_list.item()[Mkey_1])
+        # # data = torch.round(data * M_true.to(data.device)).clamp_(-128, 127)#.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
+
+        # # tmp=data[0].detach().cpu().numpy().reshape(data[0].shape[0],-1)
+        # tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
+        # # print(data.shape, tmp.shape)
+        # # if(Mkey=='conv1'):
+        # #     np.savetxt(result_path+Mkey+'_int_output.txt', tmp, fmt="%d", delimiter='  ') #一个batch中的第一张图片
+        # np.savetxt(result_path+Mkey+'_int_output.txt', tmp, fmt="%d", delimiter='  ') 
+    else: #浮点模型推断
+        result_path='output/weights_quan/validate_float/'
+        # # imgs.astype(np.float32).tofile(result_path+'input000001_352x256.bin')
+        # # imgs=imgs.reshape([-1,imgs.shape[-1]]) #(352*256,3)
+        # # if(Mkey=='conv1'):
+        # # featuremap=data[0].detach().cpu().numpy().reshape(data[0].shape[0],-1) #torch.Size([128, 16, 128, 96])
+        # featuremap=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0]) #torch.Size([128, 16, 128, 96]) 每行是通道数
+        # print(Mkey,"_oscale:",oscale_list.item()[Mkey])
+        # qfeaturemap=torch.round(data.detach().cpu()/oscale_list.item()[Mkey]).clamp_(-128,127).type(torch.int8)
+        # # print(torch.max(qfeaturemap),torch.min(qfeaturemap),torch.mean(qfeaturemap))
+        # # qfeaturemap=qfeaturemap[0].numpy().reshape(data[0].shape[0],-1) #[16,128,96]->[16,128*96]=[16,12288]
+        # qfeaturemap=qfeaturemap[0].numpy().transpose(1,2,0).reshape(-1,data[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
+        # # print(qfeaturemap.shape)
+        # np.savetxt(result_path+Mkey+'_output.txt', featuremap, fmt="%f", delimiter='  ') #一个batch中的第一张图片
+        # np.savetxt(result_path+Mkey+'_qoutput.txt', qfeaturemap, fmt="%d", delimiter='  ') 
+        # # if(data.shape[0]==80):
+        # #     np.savetxt(result_path+Mkey+'_qoutput.txt', qfeaturemap, fmt="%d", delimiter='  ') 
+        # # if(Mkey=='conv1'):
+        # #     np.savetxt(result_path+Mkey+'_output.txt', featuremap, fmt="%f", delimiter='  ') #一个batch中的第一张图片
+        # #     np.savetxt(result_path+Mkey+'_qoutput.txt', qfeaturemap, fmt="%d", delimiter='  ') #一个batch中的第一张图片 
+    return data
+
+
+def shortcut_adjust(data, Mkey, adjust=False):  #针对shortcut进行处理 2, 4,5, 7,8,9, 11,12, 14,15    [1,2,3,4,3,3,1]
+    # tmp=Mkey.split('.')
+    # tmp[1]=str(int(tmp[1])-1)
+    # Mkey_pre='.'.join(tmp)
+    # print(M_list.item()[Mkey].shape, Mkey,'    ',M_list.item()[Mkey_pre].shape, Mkey_pre) #, M_list.item()[Mkey]) # torch.Size([16]) 
+    # print(data.shape) #conv1 torch.Size([128, 16, 128, 96])
+    # scale = M_list.item()[Mkey] / M_list.item()[Mkey_pre]
+    Mkey_pre = Mkey_load[Mkey_load.index(Mkey)-2] #往前数两层的oscale (一个InvertedResidual的一开始输入) x->conv_relu->conv_relu->conv
+    scale = ascale_list.item()[Mkey_pre] / oscale_list.item()[Mkey] #这儿的oscale_list.item()[Mkey]等于下一个卷积层的ascale
+    result_path='output/weights_quan/validate/'
+    if(adjust==True): #如果进行int计算，则需要*M并截断操作； 否则不对数据进行处理
+        data = torch.round(data * scale.to(data.device)).clamp_(-128, 127)#.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
+        # tmp=data[0].detach().cpu().numpy().reshape(data[0].shape[0],-1)
+        # tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
+        # np.savetxt(result_path+Mkey+'_qx_shortcut.txt', tmp, fmt="%d", delimiter='  ') 
+    return data
+
+
+def save_quantize_results(data, Mkey, adjust=False):  #now it is for featuremap which will go into conv for calculation 得到进入conv计算后的整型feature map
+    result_path='output/weights_quan/validate/' 
+    if(adjust==True): #如果进行int计算，则将feature map的整型结果保存
+        Mkey_1=Mkey_load[Mkey_load.index(Mkey)-1] #前一层的oscale  
+        # if(Mkey_1 != 'features.0.conv3'):
+        # print(Mkey_1,"_oscale:",oscale_list.item()[Mkey_1], Mkey,"_ascale:",ascale_list.item()[Mkey])
+        # if(Mkey=='features.3.conv1'):
+        data = torch.round(data * oscale_list.item()[Mkey_1].to(data.device) /ascale_list.item()[Mkey].to(data.device)).clamp_(-128, 127)#.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
+        # # tmp=data[0].detach().cpu().numpy().reshape(data[0].shape[0],-1)
+        # tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
+        # np.savetxt(result_path+Mkey+'_int_featuremap.txt', tmp, fmt="%d", delimiter='  ') 
     return data
 
 
@@ -73,55 +150,81 @@ class InvertedResidual(nn.Module):
         self.Mkey = 'features.' + str(count) #使用count作为键值索引对应的M
         self.expand_ratio = expand_ratio
 
+        # if expand_ratio == 1:
+        #     self.conv1 = nn.Sequential(
+        #         # dw
+        #         nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=True),
+        #         # nn.BatchNorm2d(hidden_dim),
+        #         nn.ReLU(inplace=True)
+        #     )
+        #     self.conv2 = nn.Sequential(
+        #         # pw-linear
+        #         nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=True),
+        #         # nn.BatchNorm2d(oup),
+        #     )
+        #     self.conv3 = nn.Identity()  #这儿需要注意：直通，为了保持格式一致性
+        # else:
+        #     self.conv1 = nn.Sequential(
+        #         # pw
+        #         nn.Conv2d(inp, hidden_dim, 1, 1, 0, bias=True),
+        #         # nn.BatchNorm2d(hidden_dim),
+        #         nn.ReLU(inplace=True)
+        #     )
+        #     self.conv2 = nn.Sequential(
+        #         # dw
+        #         nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=True),
+        #         # nn.BatchNorm2d(hidden_dim),
+        #         nn.ReLU(inplace=True)
+        #     )
+        #     self.conv3 = nn.Sequential(
+        #         # pw-linear
+        #         nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=True),
+        #         # nn.BatchNorm2d(oup),
+        #     )
+        self.relu = nn.ReLU(inplace=True)
         if expand_ratio == 1:
-            self.conv1 = nn.Sequential(
-                # dw
-                nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=True),
-                # nn.BatchNorm2d(hidden_dim),
-                nn.ReLU(inplace=True)
-            )
-            self.conv2 = nn.Sequential(
-                # pw-linear
-                nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=True),
-                # nn.BatchNorm2d(oup),
-            )
+            self.conv1 = nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=True) #dw
+            self.conv2 = nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=True) # pw-linear
             self.conv3 = nn.Identity()  #这儿需要注意：直通，为了保持格式一致性
         else:
-            self.conv1 = nn.Sequential(
-                # pw
-                nn.Conv2d(inp, hidden_dim, 1, 1, 0, bias=True),
-                # nn.BatchNorm2d(hidden_dim),
-                nn.ReLU(inplace=True)
-            )
-            self.conv2 = nn.Sequential(
-                # dw
-                nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=True),
-                # nn.BatchNorm2d(hidden_dim),
-                nn.ReLU(inplace=True)
-            )
-            self.conv3 = nn.Sequential(
-                # pw-linear
-                nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=True),
-                # nn.BatchNorm2d(oup),
-            )
+            self.conv1 = nn.Conv2d(inp, hidden_dim, 1, 1, 0, bias=True) #pw
+            self.conv2 = nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=True) #dw
+            self.conv3 = nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=True) #pw_linear
 
     def forward(self, x):
-        if self.use_res_connect:
+        identity = x
+        if self.use_res_connect: #stride=1且输入输出通道数相等
+            x=save_quantize_results(x, self.Mkey+'.conv1', self.int_adjust)
             y=self.conv1(x)
             y=int_adjust(y, self.Mkey+'.conv1', self.int_adjust)
+            y=self.relu(y)
+
+            y=save_quantize_results(y, self.Mkey+'.conv2', self.int_adjust)
             y=self.conv2(y)
             y=int_adjust(y, self.Mkey+'.conv2', self.int_adjust)
-            y=self.conv3(y) + x
+            y=self.relu(y)
+
+            y=save_quantize_results(y, self.Mkey+'.conv3', self.int_adjust)
+            y=self.conv3(y)
             y=int_adjust(y, self.Mkey+'.conv3', self.int_adjust) #应该对shortcut之后的结果*M
+            y= y + shortcut_adjust(identity, self.Mkey+'.conv3', self.int_adjust)  #这儿的identity也是需要进行转换的！
             return y
         else:
+            x=save_quantize_results(x, self.Mkey+'.conv1', self.int_adjust)
             y=self.conv1(x)
             y=int_adjust(y, self.Mkey+'.conv1', self.int_adjust) #整形计算时对输出结果进行调整
+            y=self.relu(y)
+
+            y=save_quantize_results(y, self.Mkey+'.conv2', self.int_adjust)
             y=self.conv2(y)
             y=int_adjust(y, self.Mkey+'.conv2', self.int_adjust)
+            if(self.expand_ratio!=1): #InvertedResidual最后一层是没有relu的
+                y=self.relu(y)
+                y=save_quantize_results(y, self.Mkey+'.conv3', self.int_adjust)
+            
             y=self.conv3(y)
             if(self.expand_ratio!=1):
-                y=int_adjust(y, self.Mkey+'.conv3', self.int_adjust)
+                y=int_adjust(y, self.Mkey+'.conv3', self.int_adjust) #InvertedResidual最后一层是没有relu的
             return y
 
 class MobileNetV2(nn.Module):
@@ -236,7 +339,8 @@ class PoseMobileNet(nn.Module):
 
         input_channel = make_divisible((input_channel * width_mult)) # first channel is always 32!  ?
         # self.features = [conv_bn(3, input_channel, 2)]
-        self.conv1 = conv_bn(3, input_channel, 2)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv1 = nn.Conv2d(3, input_channel, kernel_size=3, stride=2, padding=1, bias=True)
         self.features = []
         # building inverted residual blocks
         count = 0
@@ -255,11 +359,7 @@ class PoseMobileNet(nn.Module):
         self.features = nn.Sequential(*self.features)
 
         # in order to make the channel consistent  channel{v2_1.0: 464 -> resnet self.inplanes: 128}
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(input_channel, self.inplanes, kernel_size=1, stride=1, padding=0, bias=True), 
-            # nn.BatchNorm2d(self.inplanes),
-            nn.ReLU(inplace=True),
-        )
+        self.conv2 = nn.Conv2d(input_channel, self.inplanes, kernel_size=1, stride=1, padding=0, bias=True)
      
         self.deconv_layers = []
         # used for deconv layers
@@ -269,12 +369,18 @@ class PoseMobileNet(nn.Module):
             extra.NUM_DECONV_KERNELS,
         )
 
-        self.deconv_layers0=nn.Sequential(*(self.layers[0:2]))
-        self.deconv_layers1=nn.Sequential(*(self.layers[2:4]))
-        self.deconv_layers2=nn.Sequential(*(self.layers[4:6]))
-        self.deconv_layers3=nn.Sequential(*(self.layers[6:8]))
-        self.deconv_layers4=nn.Sequential(*(self.layers[8:10]))
-        self.deconv_layers5=nn.Sequential(*(self.layers[10:12]))
+        # self.deconv_layers0=nn.Sequential(*(self.layers[0:2])) #nn.ConvTranspose2d+relu
+        # self.deconv_layers1=nn.Sequential(*(self.layers[2:4])) #nn.Conv2d+relu
+        # self.deconv_layers2=nn.Sequential(*(self.layers[4:6]))
+        # self.deconv_layers3=nn.Sequential(*(self.layers[6:8]))
+        # self.deconv_layers4=nn.Sequential(*(self.layers[8:10]))
+        # self.deconv_layers5=nn.Sequential(*(self.layers[10:12]))
+        self.deconv_layers0=self.layers[0] #nn.ConvTranspose2d
+        self.deconv_layers1=self.layers[2] #nn.Conv2d
+        self.deconv_layers2=self.layers[4]
+        self.deconv_layers3=self.layers[6]
+        self.deconv_layers4=self.layers[8]
+        self.deconv_layers5=self.layers[10]
 
 
         self.final_layer = nn.Conv2d(
@@ -338,24 +444,46 @@ class PoseMobileNet(nn.Module):
         # See note [TorchScript super()] 
         x = self.conv1(x)
         x=int_adjust(x, 'conv1', self.int_adjust)
+        x=self.relu(x)
+
         x = self.features(x)
 
+        x=save_quantize_results(x, 'conv2', self.int_adjust)
         x = self.conv2(x)
         x=int_adjust(x, 'conv2', self.int_adjust)
+        x=self.relu(x)
 
+        x=save_quantize_results(x, 'deconv_layers0', self.int_adjust)
         x = self.deconv_layers0(x)
         x=int_adjust(x, 'deconv_layers0', self.int_adjust)
+        x=self.relu(x)
+
+        x=save_quantize_results(x, 'deconv_layers1', self.int_adjust)
         x = self.deconv_layers1(x)
         x=int_adjust(x, 'deconv_layers1', self.int_adjust)
+        x=self.relu(x)
+
+        x=save_quantize_results(x, 'deconv_layers2', self.int_adjust)
         x = self.deconv_layers2(x)
         x=int_adjust(x, 'deconv_layers2', self.int_adjust)
+        x=self.relu(x)
+
+        x=save_quantize_results(x, 'deconv_layers3', self.int_adjust)
         x = self.deconv_layers3(x)
         x=int_adjust(x, 'deconv_layers3', self.int_adjust)
+        x=self.relu(x)
+
+        x=save_quantize_results(x, 'deconv_layers4', self.int_adjust)
         x = self.deconv_layers4(x)
         x=int_adjust(x, 'deconv_layers4', self.int_adjust)
+        x=self.relu(x)
+
+        x=save_quantize_results(x, 'deconv_layers5', self.int_adjust)
         x = self.deconv_layers5(x)
         x=int_adjust(x, 'deconv_layers5', self.int_adjust)
+        x=self.relu(x)
 
+        x=save_quantize_results(x, 'final_layer', self.int_adjust)
         x = self.final_layer(x)
         x=int_adjust(x, 'final_layer', self.int_adjust)
         return x
@@ -440,7 +568,7 @@ def farward_hook(module, inp, outp):  #似乎并不需要，虽然使用hook可�
     fmap_block['output'] = outp
 
 
-def get_pose_net(cfg, stages_repeats, stages_out_channels,  is_train, **kwargs):
+def get_pose_net(cfg, stages_repeats, stages_out_channels,  is_train, int_adjust=False,  **kwargs):
     num_layers = cfg.MODEL.EXTRA.NUM_LAYERS
     #style = cfg.MODEL.STYLE  # deprecated
 
@@ -448,7 +576,7 @@ def get_pose_net(cfg, stages_repeats, stages_out_channels,  is_train, **kwargs):
     block_class = ""
     layers = []
 
-    model = PoseMobileNet(block_class, layers, cfg, stages_repeats, stages_out_channels, **kwargs)
+    model = PoseMobileNet(block_class, layers, cfg, stages_repeats, stages_out_channels, int_adjust=int_adjust, **kwargs)
     #model = PoseShuffleNet(cfg, **kwargs)
 
     # 注册hook

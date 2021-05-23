@@ -14,4 +14,5 @@ import models.pose_shufflenetv2_short
 import models.pose_mobilenet
 import models.pose_mobilenet_8
 import models.pose_mobilenet_relu
+import models.pose_mobilenet_allrelu
 import models.pose_mobilenet_relu_bnfuse

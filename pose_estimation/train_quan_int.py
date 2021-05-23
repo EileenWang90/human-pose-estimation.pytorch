@@ -72,7 +72,7 @@ def parse_args():
     # general
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        default='experiments/coco/resnet50/mobile_quant_relu_int.yaml',
+                        default='experiments/coco/resnet50/mobile_quant_relu_int.yaml',  #experiments/coco/resnet50/mobile_quant_allrelu_int.yaml #量化结果是错误的
                         type=str)
 
     args, rest = parser.parse_known_args()
@@ -162,19 +162,19 @@ def main():
         stages_repeats, stages_out_channels,
         is_train=is_train,
     )
-    #print(model)
+    # print(model)
     #model = model.cuda()
     #summary(model,input_size=(3, 256, 192))
     gpus = [int(i) for i in config.GPUS.split(',')]
     device = select_device(config.GPUS, batch_size=config.TEST.BATCH_SIZE*len(gpus))
     #model = model.to(device)
     
-    ######################## 使用float版本的weight.pt时 ##################################   这时用两块GPU test结果还是0
-    if(~args.noresume):
-        is_train = False
-        model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
-        #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
-        print('Load model weight from',config.MODEL.PRETRAINED)
+    # ######################## 使用float版本的weight.pt时 ##################################   这时用两块GPU test结果还是0
+    # if(~args.noresume):
+    #     is_train = False
+    #     model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
+    #     #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
+    #     print('Load model weight from',config.MODEL.PRETRAINED)
 
     ################################## quantization model #################################
     # print('*******************ori_model*******************\n', model)
@@ -186,13 +186,13 @@ def main():
     # print('\n*******************quant_model*******************\n', model)
     print('\n*******************Using quant_model in test*******************\n')
 
-    # ####################### 使用量化版本的weight.pt时 ##################################
-    # if(~args.noresume):
-    #     is_train = False
-    #     print(device) #cuda:0   device=torch.device('cuda:0')
-    #     model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
-    #     #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
-    #     print('Load model weight from',config.MODEL.PRETRAINED)
+    ####################### 使用量化版本的weight.pt时 ##################################
+    if(~args.noresume):
+        is_train = False
+        print(device) #cuda:0   device=torch.device('cuda:0')
+        model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
+        #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
+        print('Load model weight from',config.MODEL.PRETRAINED)
 
     # copy model file
     this_dir = os.path.dirname(__file__)
@@ -210,7 +210,7 @@ def main():
                              3,
                              config.MODEL.IMAGE_SIZE[1],
                              config.MODEL.IMAGE_SIZE[0]))
-    writer_dict['writer'].add_graph(model.to('cpu'), (dump_input, ), verbose=False)  #weights(model)和input必须类型一致，即必须都房子啊cpu或者gpu上
+    writer_dict['writer'].add_graph(model.to('cpu'), (dump_input, ), verbose=False)  #weights(model)和input必须类型一致，即必须都放在cpu或者gpu上
 
     #print('0:',next(model.parameters()).device) #查看模型在CPU还是GPU上  
     gpus = [int(i) for i in config.GPUS.split(',')]

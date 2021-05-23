@@ -182,8 +182,8 @@ def main():
         config.DATASET.TEST_SET,
         False,
         transforms.Compose([
-            transforms.ToTensor(),
-            normalize,
+            transforms.ToTensor(), #ToTensor()能够把灰度范围从0-255变换到0-1之间
+            normalize, #进行归一化
         ])
     )
     valid_loader = torch.utils.data.DataLoader(

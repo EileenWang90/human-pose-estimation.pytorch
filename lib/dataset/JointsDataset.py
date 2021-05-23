@@ -51,7 +51,7 @@ class JointsDataset(Dataset):
         self.transform = transform
         self.db = []
 
-    def _get_db(self):
+    def _get_db(self): #得到目标检测单类人的结果
         raise NotImplementedError
 
     def evaluate(self, cfg, preds, output_dir, *args, **kwargs):
@@ -73,7 +73,7 @@ class JointsDataset(Dataset):
                 image_file, cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION)
         else:
             data_numpy = cv2.imread(
-                image_file, cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION)
+                image_file, cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION)  #(536,640,3) <class 'numpy.ndarray'> [0,255]
 
         if data_numpy is None:
             logger.error('=> fail to read {}'.format(image_file))
@@ -101,14 +101,14 @@ class JointsDataset(Dataset):
                 c[0] = data_numpy.shape[1] - c[0] - 1
 
         trans = get_affine_transform(c, s, r, self.image_size)
-        input = cv2.warpAffine(
-            data_numpy,
-            trans,
+        input = cv2.warpAffine( #讲解如下 https://blog.csdn.net/qq878594585/article/details/81838260 默认边界填充为0，即黑色
+            data_numpy, #[0，255]
+            trans, # trans 仿射变换矩阵，一般反映平移或旋转的关系
             (int(self.image_size[0]), int(self.image_size[1])),
-            flags=cv2.INTER_LINEAR)
+            flags=cv2.INTER_LINEAR) #使用线性插值  还是uint8
 
         if self.transform:
-            input = self.transform(input)
+            input = self.transform(input) #[0,255] 变成了浮点类型，应该时先除255->[0,1]，再进行归一化操作 范围变成[-2.1179, 2.64]
 
         for i in range(self.num_joints):
             if joints_vis[i, 0] > 0.0:
