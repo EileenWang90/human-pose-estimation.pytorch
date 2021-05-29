@@ -122,8 +122,15 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                 input = torch.round(input *127.5/2.64).clamp_(-128,127) #从[-2.1179，2.64] 映射到 [-540,673]
                 # print(input[0])
                 qfeaturemap0=input[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,input[0].shape[0]) #[3,256,192]->[256,192,3]->[256*192,3]
-                np.savetxt('output/weights_quan/postquant/'+'qinput0.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
-            print(input.shape,torch.max(input), torch.min(input), torch.mean(input.abs())) #torch.Size([128, 3, 256, 192]) tensor(127.) tensor(-102.) tensor(-21.4869)
+                # qfeaturemap0.astype(np.int8).tofile('output/weights_quan/postquant/'+'input_256x192.bin')
+                # np.savetxt('output/weights_quan/postquant/'+'qinput0.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
+                # b=np.fromfile('output/weights_quan/postquant/'+'input_256x192.bin',dtype=np.int8)
+                # # print(b.shape,input.shape) #input[0].shape torch.Size([3, 256, 192])
+                # b=b.reshape(input[0].shape[1],input[0].shape[2],input[0].shape[0]).transpose(2,0,1).astype(np.float32) #(256, 192, 3)
+                # # print(b.shape) #(3,256,192)
+                # b=np.expand_dims(b,0) #[3,256,192]->[1,3,256,192]
+                # input=torch.tensor(b).to(input.device)
+            # print(input.shape,torch.max(input), torch.min(input), torch.mean(input.abs())) #torch.Size([128, 3, 256, 192]) tensor(127.) tensor(-102.) tensor(-21.4869)
             # for i in range(input.shape[0]):
             #     print(input[i].shape,torch.max(input[i]), torch.min(input[i]), torch.mean(input[i].abs())) #torch.Size([128, 3, 256, 192]) tensor(127.) tensor(-102.) tensor(-21.4869)
 

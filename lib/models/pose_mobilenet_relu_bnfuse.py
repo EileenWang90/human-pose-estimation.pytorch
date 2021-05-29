@@ -27,40 +27,63 @@ import numpy as np
 ############################## int推断时进行数据调整 #########################
 # 先使用浮点值进行数据验算
 convert_path='/home/ytwang/wyt_workspace/quantization/human-pose-estimation.pytorch/output/weights_quan/'
-M_list = np.load(convert_path+'M_refactor.npy', allow_pickle=True) #量化感知训练得到的scale
-#M_list = np.load(convert_path+'post_Mrefactor.npy', allow_pickle=True)  #后量化得到的scale
+M_list0 = np.load(convert_path+'M_refactor.npy', allow_pickle=True) #量化感知训练得到的scale
+M_list1 = np.load(convert_path+'mscale_norelu_quant.npy', allow_pickle=True)  #去掉relu的量化反量化 得到的scale
+M_list = np.load(convert_path+'M0_quant_requant.npy', allow_pickle=True)  #MO量化反量化 得到的scale
 
-# wscale_list=np.save(convert_path+'wscale.npy', allow_pickle=True) #这句代码还有问题，是不是还要调整格式呀？
+wscale_list = np.load(convert_path+'wscale.npy', allow_pickle=True) #这句代码还有问题，是不是还要调整格式呀？
 oscale_list = np.load(convert_path+'oscale.npy', allow_pickle=True)
 ascale_list = np.load(convert_path+'ascale.npy', allow_pickle=True)
 Mkey_load = list(np.load(convert_path+'M_key.npy', allow_pickle=True))    #type:np.ndarray ->list  是59层名称的列表
+shortcut_list=['features.2.conv1','features.4.conv1','features.5.conv1','features.7.conv1','features.8.conv1','features.9.conv1','features.11.conv1','features.12.conv1','features.14.conv1','features.15.conv1']
 # Mkey_load=list(Mkey_load)
 
 def int_adjust(data, Mkey, adjust=False):  #包括层量化和通道量化
     # print(M_list.item()[Mkey].shape, Mkey) #, M_list.item()[Mkey]) # torch.Size([16]) 
     # print(data.shape) #conv1 torch.Size([128, 16, 128, 96])
-    result_path='output/weights_quan/validate/' #validate postquant
+    # result_path='output/weights_quan/validate/' 
+    # result_path='output/weights_quan/validate_norelurequant/' 
+    result_path='output/weights_quan/validate_M0/' 
     if(adjust==True and Mkey=='final_layer'): #最后一层直接进行浮点计算 不需要舍入和截断
         # print('It is final layer in intmodel.')
         data = data * M_list.item()[Mkey].to(data.device) #.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
-        # # tmp=data[0].detach().cpu().numpy().reshape(data[0].shape[0],-1)
-        # tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(data[0].shape[0],-1)
-        # np.savetxt(result_path+'feature_intfinal_output.txt', tmp, fmt="%f", delimiter='  ') 
+        # tmp=data[0].detach().cpu().numpy().reshape(data[0].shape[0],-1)
+        tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(data[0].shape[0],-1)
+        np.savetxt(result_path+'feature_intfinal_output.txt', tmp, fmt="%f", delimiter='  ') 
         # print(time)
 
     elif(adjust==True): #如果进行int计算，则需要*M并截断操作； 否则不对数据进行处理
-        data = torch.round(data * M_list.item()[Mkey].to(data.device)).clamp_(-128, 127)#.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
-        # # Mkey_1=Mkey_load[Mkey_load.index(Mkey)+1] #后一层的ascale
-        # # M_true=ascale_list.item()[Mkey]*wscale_list.item()[Mkey]/ascale_list.item()[Mkey_1]
-        # # print("M_true:",M_true,ascale_list.item()[Mkey], wscale_list.item()[Mkey], ascale_list.item()[Mkey_1])
-        # # data = torch.round(data * M_true.to(data.device)).clamp_(-128, 127)#.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
+        # Mkey_post = Mkey_load[Mkey_load.index(Mkey)+1] #后一层的ascale
+        # #################### shortcut处直接使用out部分的scale ##################
+        # shortcut_flag=False
+        # for i in shortcut_list:
+        #     if(i==Mkey):
+        #         shortcut_flag=True
+        # if(shortcut_flag==True):
+        #     Mkey_shortcut = Mkey_load[Mkey_load.index(Mkey)+3]
+        #     Mscale = wscale_list.item()[Mkey]*ascale_list.item()[Mkey_shortcut]/ascale_list.item()[Mkey_post]
+        # else:
+        #     Mscale = wscale_list.item()[Mkey]*ascale_list.item()[Mkey]/ascale_list.item()[Mkey_post]
+        #直接使用下一层的ascale作为本层的oscale
+        # Mkey_post = Mkey_load[Mkey_load.index(Mkey)+1] #后一层的ascale
+        # Mscale = wscale_list.item()[Mkey]*ascale_list.item()[Mkey]/ascale_list.item()[Mkey_post]
+        # print(Mkey,Mkey_post)
 
-        # # tmp=data[0].detach().cpu().numpy().reshape(data[0].shape[0],-1)
-        # tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
-        # # print(data.shape, tmp.shape)
-        # # if(Mkey=='conv1'):
-        # #     np.savetxt(result_path+Mkey+'_int_output.txt', tmp, fmt="%d", delimiter='  ') #一个batch中的第一张图片
-        # np.savetxt(result_path+Mkey+'_int_output.txt', tmp, fmt="%d", delimiter='  ') 
+        # print("Mscale:", Mscale.flatten(),"\nM_list[]=",M_list.item()[Mkey].flatten())
+        # data = torch.round(data * Mscale.to(data.device)).clamp_(-128, 127)#.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
+        #使用relu前对featuremap进行量化的scale作为oscale
+        data = torch.round(data * M_list.item()[Mkey].to(data.device)).clamp_(-128, 127)#.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
+        # print(M_list.item()[Mkey].flatten(),'\n',M_list1.item()[Mkey].flatten(),'\n')
+
+        # Mkey_1=Mkey_load[Mkey_load.index(Mkey)+1] #后一层的ascale
+        # M_true=ascale_list.item()[Mkey]*wscale_list.item()[Mkey]/ascale_list.item()[Mkey_1]
+        # print("M_true:",M_true,ascale_list.item()[Mkey], wscale_list.item()[Mkey], ascale_list.item()[Mkey_1])
+        # data = torch.round(data * M_true.to(data.device)).clamp_(-128, 127)#.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
+
+        # tmp=data[0].detach().cpu().numpy().reshape(data[0].shape[0],-1)
+        tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
+        # print(data.shape, tmp.shape)
+        np.savetxt(result_path+Mkey+'_int_output.txt', tmp, fmt="%d", delimiter='  ') 
     else: #浮点模型推断
         result_path='output/weights_quan/validate_float/'
         # # imgs.astype(np.float32).tofile(result_path+'input000001_352x256.bin')
@@ -78,9 +101,6 @@ def int_adjust(data, Mkey, adjust=False):  #包括层量化和通道量化
         # np.savetxt(result_path+Mkey+'_qoutput.txt', qfeaturemap, fmt="%d", delimiter='  ') 
         # # if(data.shape[0]==80):
         # #     np.savetxt(result_path+Mkey+'_qoutput.txt', qfeaturemap, fmt="%d", delimiter='  ') 
-        # # if(Mkey=='conv1'):
-        # #     np.savetxt(result_path+Mkey+'_output.txt', featuremap, fmt="%f", delimiter='  ') #一个batch中的第一张图片
-        # #     np.savetxt(result_path+Mkey+'_qoutput.txt', qfeaturemap, fmt="%d", delimiter='  ') #一个batch中的第一张图片 
     return data
 
 
@@ -93,26 +113,32 @@ def shortcut_adjust(data, Mkey, adjust=False):  #针对shortcut进行处理 2, 4
     # scale = M_list.item()[Mkey] / M_list.item()[Mkey_pre]
     Mkey_pre = Mkey_load[Mkey_load.index(Mkey)-2] #往前数两层的oscale (一个InvertedResidual的一开始输入) x->conv_relu->conv_relu->conv
     scale = ascale_list.item()[Mkey_pre] / oscale_list.item()[Mkey] #这儿的oscale_list.item()[Mkey]等于下一个卷积层的ascale
-    result_path='output/weights_quan/validate/'
+    # print(Mkey_pre, ascale_list.item()[Mkey_pre], oscale_list.item()[Mkey], scale)
+    # result_path='output/weights_quan/validate/'
+    result_path='output/weights_quan/validate_M0/' 
     if(adjust==True): #如果进行int计算，则需要*M并截断操作； 否则不对数据进行处理
         data = torch.round(data * scale.to(data.device)).clamp_(-128, 127)#.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
         # tmp=data[0].detach().cpu().numpy().reshape(data[0].shape[0],-1)
-        # tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
-        # np.savetxt(result_path+Mkey+'_qx_shortcut.txt', tmp, fmt="%d", delimiter='  ') 
+        tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
+        np.savetxt(result_path+Mkey+'_qx_shortcut.txt', tmp, fmt="%d", delimiter='  ') 
     return data
 
 
 def save_quantize_results(data, Mkey, adjust=False):  #now it is for featuremap which will go into conv for calculation 得到进入conv计算后的整型feature map
-    result_path='output/weights_quan/validate/' 
-    if(adjust==True): #如果进行int计算，则将feature map的整型结果保存
+    # result_path='output/weights_quan/validate/'
+    # result_path='output/weights_quan/validate_norelurequant/'  
+    result_path='output/weights_quan/validate_M0/' 
+    using_relu_oscale=False #如果relu前的featuremap进行了量化反量化，则需要进行scale转换 True; 否则为False
+    if(adjust==True and using_relu_oscale): #如果进行int计算，则将feature map的整型结果保存
         Mkey_1=Mkey_load[Mkey_load.index(Mkey)-1] #前一层的oscale  
         # if(Mkey_1 != 'features.0.conv3'):
         # print(Mkey_1,"_oscale:",oscale_list.item()[Mkey_1], Mkey,"_ascale:",ascale_list.item()[Mkey])
-        # if(Mkey=='features.3.conv1'):
         data = torch.round(data * oscale_list.item()[Mkey_1].to(data.device) /ascale_list.item()[Mkey].to(data.device)).clamp_(-128, 127)#.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
         # # tmp=data[0].detach().cpu().numpy().reshape(data[0].shape[0],-1)
         # tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
         # np.savetxt(result_path+Mkey+'_int_featuremap.txt', tmp, fmt="%d", delimiter='  ') 
+    tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
+    np.savetxt(result_path+Mkey+'_int_featuremap.txt', tmp, fmt="%d", delimiter='  ') 
     return data
 
 
