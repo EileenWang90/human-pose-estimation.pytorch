@@ -9,7 +9,7 @@ from __future__ import print_function
 
 import argparse
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='0'
+os.environ['CUDA_VISIBLE_DEVICES']='1'
 import pprint
 
 import torch
@@ -68,7 +68,7 @@ def parse_args():
     # general
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        default='experiments/coco/resnet50/mobile_quant_relu_int.yaml',
+                        default='experiments/coco/resnet50/mobile_quant_relu_int_deconv3.yaml', #mobile_quant_relu_int_deconv3.yaml   mobile_quant_relu_int.yaml  mobile_quant_allrelu_int.yaml
                         type=str)
 
     args, rest = parser.parse_known_args()
@@ -184,7 +184,7 @@ def main():
     device = select_device(config.GPUS, batch_size=config.TEST.BATCH_SIZE*len(gpus))
 
     model = model.to(device)
-    #print(model)
+    # print(model)
     # summary(model,input_size=(3, 256, 192))
 
     #print('*******************ori_model*******************\n', model)
@@ -196,7 +196,7 @@ def main():
     elif(config.QUANTIZATION.QUANT_METHOD == 2): #LSQ
         modules_to_replace = LSQquan.find_modules_to_quantize(model, quan_schedulerA=config.LSQACT, quan_schedulerW=config.LSQWEIGHT, quan_schedulerE=config.LSQEXPECTS)
         model = LSQquan.replace_module_by_names(model, modules_to_replace)
-    #print('\n*******************quant_model*******************\n', model)
+    # print('\n*******************quant_model*******************\n', model)
     print('\n*******************Using quant_model in test*******************\n')
     
     if config.TEST.MODEL_FILE:

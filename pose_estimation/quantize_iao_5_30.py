@@ -358,7 +358,7 @@ class QuantConvTranspose2d(nn.ConvTranspose2d):
             else:
                 self.weight_quantizer = AsymmetricQuantizer(bits=w_bits, observer=MovingAverageMinMaxObserver(
                                                             q_level='L', out_channels=None, device=device), activation_weight_flag=2)
-
+        
     def forward(self, input):
         quant_input = self.activation_quantizer(input)
         if not self.quant_inference:
@@ -506,17 +506,11 @@ class QuantBNFuseConv2d(QuantConv2d):
         # quant_input_int
         print("quant_input_int", quant_input_int.shape, quant_input_int)
         qfeaturemap0=quant_input_int[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
-        # qfeaturemap1=quant_input_int[1].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
-        # qfeaturemap2=quant_input_int[2].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
-        # qfeaturemap3=quant_input_int[3].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
         np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qinput0.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
-        # np.savetxt('output/weights_quan/beforebnfuse/'+'feature_qinput1.txt', qfeaturemap1, fmt="%d", delimiter='  ') 
-        # np.savetxt('output/weights_quan/beforebnfuse/'+'feature_qinput2.txt', qfeaturemap2, fmt="%d", delimiter='  ') 
-        # np.savetxt('output/weights_quan/beforebnfuse/'+'feature_qinput3.txt', qfeaturemap3, fmt="%d", delimiter='  ') 
         # # quant_weight_int
         print("quant_weight_int", quant_weight_int.shape, quant_weight_int)
         print("quant_bias_int", quant_bias_int.shape, quant_bias_int)
-        qweight=quant_weight_int.detach().cpu().numpy().reshape(quant_weight_int.shape[0],-1) #[16,1,3,3]->[16,9]  [16,8,1,1]->[16,8] 
+        qweight=quant_weight_int.detach().cpu().numpy().transpose(0,2,3,1).reshape(quant_weight_int.shape[0],-1) #[16,1,3,3]->[16,9]  [16,8,1,1]->[16,8] 
         np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qweight.txt', qweight, fmt="%d", delimiter='  ') 
         qbias=quant_bias_int.detach().cpu().numpy().reshape(-1) 
         np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qbias.txt', qbias, fmt="%d", delimiter='  ') 
@@ -1010,10 +1004,10 @@ def add_quant_op(module, a_bits=8, w_bits=8, q_type=0, q_level=0, device='cpu',
                                            quant_inference=quant_inference)
             quant_linear.weight.data = child.weight
             module._modules[name] = quant_linear
-        elif isinstance(child, nn.ReLU):
-            quant_relu = QuantReLU(inplace=child.inplace, a_bits=a_bits,
-                                   q_type=q_type, device=device)
-            module._modules[name] = quant_relu
+        # elif isinstance(child, nn.ReLU):
+        #     quant_relu = QuantReLU(inplace=child.inplace, a_bits=a_bits,
+        #                            q_type=q_type, device=device)
+        #     module._modules[name] = quant_relu
         elif isinstance(child, nn.Sigmoid):
             quant_sigmoid = QuantSigmoid(
                 a_bits=a_bits, q_type=q_type, device=device)

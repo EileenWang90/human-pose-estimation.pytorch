@@ -190,14 +190,14 @@ class Quantizer(nn.Module):
 
             output = (torch.clamp(self.round(input / self.scale - self.zero_point),
                                   self.quant_min_val, self.quant_max_val) + self.zero_point) * self.scale #和公式里的zero_point的加减号正好是相反的
-            qoutput= torch.clamp(self.round(input / self.scale - self.zero_point),self.quant_min_val, self.quant_max_val) + self.zero_point
-            #print('output.device:',output.device)
+            # qoutput= torch.clamp(self.round(input / self.scale - self.zero_point),self.quant_min_val, self.quant_max_val) + self.zero_point
+            # print('output.device:',output.device)
             # print("scale:",self.scale.flatten(), "zero_point:",self.zero_point.flatten(), "min:", self.quant_min_val, "max:",self.quant_max_val)
             # print("qoutput:", qoutput.shape, qoutput)
             # qfeaturemap=qoutput[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,qoutput[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
             # np.savetxt('output/weights_quan/beforebnfuse/'+'feature_qoutput.txt', qfeaturemap, fmt="%d", delimiter='  ') 
-        return output,qoutput
-        # return output
+        # return output,qoutput
+        return output
 
 class SignedQuantizer(Quantizer):
     def __init__(self, *args, **kwargs):
@@ -295,18 +295,18 @@ class QuantConv2d(nn.Conv2d):
                                                                 q_level='L', out_channels=None, device=device), activation_weight_flag=2)
 
     def forward(self, input):
-        # quant_input = self.activation_quantizer(input)
+        quant_input = self.activation_quantizer(input)
 
-        quant_input,quant_input_int = self.activation_quantizer(input)
+        # quant_input,quant_input_int = self.activation_quantizer(input)
         # quant_weight,quant_weight_int = self.weight_quantizer(self.weight)
        
-        global Mkey_count
-        print("Total(float):", quant_input.mean(), quant_input.min(), quant_input.max())
-        print("Total(q):", quant_input_int.mean(), quant_input_int.min(), quant_input_int.max())
-        print("quant_input_int", quant_input_int.shape, quant_input_int)
-        qfeaturemap0=quant_input_int[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
-        np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qinput0.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
-        Mkey_count +=1
+        # global Mkey_count
+        # print("Total(float):", quant_input.mean(), quant_input.min(), quant_input.max())
+        # print("Total(q):", quant_input_int.mean(), quant_input_int.min(), quant_input_int.max())
+        # print("quant_input_int", quant_input_int.shape, quant_input_int)
+        # qfeaturemap0=quant_input_int[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
+        # np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qinput0.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
+        # Mkey_count +=1
 
         if not self.quant_inference:
             quant_weight = self.weight_quantizer(self.weight)
@@ -359,6 +359,41 @@ class QuantConvTranspose2d(nn.ConvTranspose2d):
                 self.weight_quantizer = AsymmetricQuantizer(bits=w_bits, observer=MovingAverageMinMaxObserver(
                                                             q_level='L', out_channels=None, device=device), activation_weight_flag=2)
 
+        # if q_type == 0:   #改为既可以按层也可以按通道进行量化
+        #     self.activation_quantizer = SymmetricQuantizer(bits=a_bits, observer=MovingAverageMinMaxObserver(
+        #                                                    q_level='L', out_channels=None, device=device), activation_weight_flag=1)
+        #     if weight_observer == 0:
+        #         if q_level == 0:
+        #             self.weight_quantizer = SymmetricQuantizer(bits=w_bits, observer=MinMaxObserver(
+        #                                                        q_level='C', out_channels=out_channels, device=device), activation_weight_flag=0)
+        #         else:
+        #             self.weight_quantizer = SymmetricQuantizer(bits=w_bits, observer=MinMaxObserver(
+        #                                                        q_level='L', out_channels=None, device=device), activation_weight_flag=0)
+        #     else:
+        #         if q_level == 0:
+        #             self.weight_quantizer = SymmetricQuantizer(bits=w_bits, observer=MovingAverageMinMaxObserver(
+        #                                                        q_level='C', out_channels=out_channels, device=device), activation_weight_flag=0)
+        #         else:
+        #             self.weight_quantizer = SymmetricQuantizer(bits=w_bits, observer=MovingAverageMinMaxObserver(
+        #                                                        q_level='L', out_channels=None, device=device), activation_weight_flag=0)
+        # else:
+        #     self.activation_quantizer = AsymmetricQuantizer(bits=a_bits, observer=MovingAverageMinMaxObserver(
+        #                                                     q_level='L', out_channels=None, device=device), activation_weight_flag=2)
+        #     if weight_observer == 0:
+        #         if q_level == 0:
+        #             self.weight_quantizer = AsymmetricQuantizer(bits=w_bits, observer=MinMaxObserver(
+        #                                                         q_level='C', out_channels=out_channels, device=device), activation_weight_flag=2)
+        #         else:
+        #             self.weight_quantizer = AsymmetricQuantizer(bits=w_bits, observer=MinMaxObserver(
+        #                                                         q_level='L', out_channels=None, device=device), activation_weight_flag=2)
+        #     else:
+        #         if q_level == 0:
+        #             self.weight_quantizer = AsymmetricQuantizer(bits=w_bits, observer=MovingAverageMinMaxObserver(
+        #                                                         q_level='C', out_channels=out_channels, device=device), activation_weight_flag=2)
+        #         else:
+        #             self.weight_quantizer = AsymmetricQuantizer(bits=w_bits, observer=MovingAverageMinMaxObserver(
+        #                                                         q_level='L', out_channels=None, device=device), activation_weight_flag=2)          
+        
     def forward(self, input):
         quant_input = self.activation_quantizer(input)
         if not self.quant_inference:
@@ -483,38 +518,38 @@ class QuantBNFuseConv2d(QuantConv2d):
             weight_fused = self.weight * reshape_to_weight(self.gamma / torch.sqrt(self.running_var + self.eps))                      # w融running
 
         # 量化A和bn融合后的W
-        # quant_input= self.activation_quantizer(input)
-        # # print("before weight", weight_fused.mean(), weight_fused.min(), weight_fused.max(), weight_fused.shape)
-        # quant_weight= self.weight_quantizer(weight_fused)
-        # # print("after weight:", quant_weight.mean(), quant_weight.min(), quant_weight.max(), "\nError:",(weight_fused-quant_weight).mean(), (weight_fused-quant_weight).max())
-        # #bias不需要截至[-128,127] 注意这儿的bias是对称量化的表示方式，表达式中并没有zero_point
-        # bias_fused = Round.apply(bias_fused / (self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale))*(self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale) 
+        quant_input= self.activation_quantizer(input)
+        # print("before weight", weight_fused.mean(), weight_fused.min(), weight_fused.max(), weight_fused.shape)
+        quant_weight= self.weight_quantizer(weight_fused)
+        # print("after weight:", quant_weight.mean(), quant_weight.min(), quant_weight.max(), "\nError:",(weight_fused-quant_weight).mean(), (weight_fused-quant_weight).max())
+        #bias不需要截至[-128,127] 注意这儿的bias是对称量化的表示方式，表达式中并没有zero_point
+        bias_fused = Round.apply(bias_fused / (self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale))*(self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale) 
 
-        global Mkey_count
-        print("At first:", input.mean(), input.min(), input.max(), input.shape)
-        quant_input,quant_input_int = self.activation_quantizer(input)
-        quant_weight,quant_weight_int = self.weight_quantizer(weight_fused)
-        quant_bias_int = Round.apply(bias_fused / (self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale)) #bias不需要截至[-128,127]
-        quant_bias = quant_bias_int*(self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale)
-        bias_fused = quant_bias
-        print(torch.mean(quant_bias-bias_fused),torch.max(quant_bias-bias_fused))
+        # global Mkey_count
+        # print("At first:", input.mean(), input.min(), input.max(), input.shape)
+        # quant_input,quant_input_int = self.activation_quantizer(input)
+        # quant_weight,quant_weight_int = self.weight_quantizer(weight_fused)
+        # quant_bias_int = Round.apply(bias_fused / (self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale)) #bias不需要截至[-128,127]
+        # quant_bias = quant_bias_int*(self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale)
+        # bias_fused = quant_bias
+        # print(torch.mean(quant_bias-bias_fused),torch.max(quant_bias-bias_fused))
 
-        print("Total(float):", quant_input.mean(), quant_input.min(), quant_input.max())
-        print("Total(q):", quant_input_int.mean(), quant_input_int.min(), quant_input_int.max())
-        # for i in range(quant_input_int.shape[0]):
-        #     print(i, quant_input_int[i].mean(), quant_input_int[i].min(), quant_input_int[i].max())
-        # quant_input_int
-        print("quant_input_int", quant_input_int.shape, quant_input_int)
-        qfeaturemap0=quant_input_int[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
-        np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qinput0.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
-        # # quant_weight_int
-        print("quant_weight_int", quant_weight_int.shape, quant_weight_int)
-        print("quant_bias_int", quant_bias_int.shape, quant_bias_int)
-        qweight=quant_weight_int.detach().cpu().numpy().transpose(0,2,3,1).reshape(quant_weight_int.shape[0],-1) #[16,1,3,3]->[16,9]  [16,8,1,1]->[16,8] 
-        np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qweight.txt', qweight, fmt="%d", delimiter='  ') 
-        qbias=quant_bias_int.detach().cpu().numpy().reshape(-1) 
-        np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qbias.txt', qbias, fmt="%d", delimiter='  ') 
-        Mkey_count += 1 
+        # print("Total(float):", quant_input.mean(), quant_input.min(), quant_input.max())
+        # print("Total(q):", quant_input_int.mean(), quant_input_int.min(), quant_input_int.max())
+        # # for i in range(quant_input_int.shape[0]):
+        # #     print(i, quant_input_int[i].mean(), quant_input_int[i].min(), quant_input_int[i].max())
+        # # quant_input_int
+        # print("quant_input_int", quant_input_int.shape, quant_input_int)
+        # qfeaturemap0=quant_input_int[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
+        # np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qinput0.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
+        # # # quant_weight_int
+        # print("quant_weight_int", quant_weight_int.shape, quant_weight_int)
+        # print("quant_bias_int", quant_bias_int.shape, quant_bias_int)
+        # qweight=quant_weight_int.detach().cpu().numpy().transpose(0,2,3,1).reshape(quant_weight_int.shape[0],-1) #[16,1,3,3]->[16,9]  [16,8,1,1]->[16,8] 
+        # np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qweight.txt', qweight, fmt="%d", delimiter='  ') 
+        # qbias=quant_bias_int.detach().cpu().numpy().reshape(-1) 
+        # np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qbias.txt', qbias, fmt="%d", delimiter='  ') 
+        # Mkey_count += 1 
 
         # 量化卷积
         if self.training:  # 训练态
@@ -546,9 +581,10 @@ class QuantBNFuseConvTranspose2d(QuantConvTranspose2d):
                  a_bits=8,
                  w_bits=8,
                  q_type=0, 
-                 q_level=0, #其实不需要，因为默认反卷积是按层融合的，这个参数并没有用上
+                 q_level=0, 
                  device='cpu',
                  weight_observer=0):
+        #q_level 其实不需要，因为默认反卷积是按层融合的，这个参数并没有用上  但我现在改成了可以按通道
         #如果函数中没有key进行对应，一定要小心各个数据的顺序！！   dilation顺序错了！！
         #super(QuantConvTranspose2d, self).__init__(in_channels, out_channels, kernel_size, stride, padding, output_padding, dilation, groups, bias, padding_mode)
         super(QuantConvTranspose2d, self).__init__(in_channels, out_channels, kernel_size, stride, padding, output_padding, groups, bias, dilation, padding_mode)
@@ -581,6 +617,42 @@ class QuantBNFuseConvTranspose2d(QuantConvTranspose2d):
             else:
                 self.weight_quantizer = AsymmetricQuantizer(bits=w_bits, observer=MovingAverageMinMaxObserver(
                                                             q_level='L', out_channels=None, device=device), activation_weight_flag=2)
+        
+        # if q_type == 0:   #改为既可以按层也可以按通道进行量化
+        #     self.activation_quantizer = SymmetricQuantizer(bits=a_bits, observer=MovingAverageMinMaxObserver(
+        #                                                    q_level='L', out_channels=None, device=device), activation_weight_flag=1)
+        #     if weight_observer == 0:
+        #         if q_level == 0:
+        #             self.weight_quantizer = SymmetricQuantizer(bits=w_bits, observer=MinMaxObserver(
+        #                                                        q_level='C', out_channels=out_channels, device=device), activation_weight_flag=0)
+        #         else:
+        #             self.weight_quantizer = SymmetricQuantizer(bits=w_bits, observer=MinMaxObserver(
+        #                                                        q_level='L', out_channels=None, device=device), activation_weight_flag=0)
+        #     else:
+        #         if q_level == 0:
+        #             self.weight_quantizer = SymmetricQuantizer(bits=w_bits, observer=MovingAverageMinMaxObserver(
+        #                                                        q_level='C', out_channels=out_channels, device=device), activation_weight_flag=0)
+        #         else:
+        #             self.weight_quantizer = SymmetricQuantizer(bits=w_bits, observer=MovingAverageMinMaxObserver(
+        #                                                        q_level='L', out_channels=None, device=device), activation_weight_flag=0)
+        # else:
+        #     self.activation_quantizer = AsymmetricQuantizer(bits=a_bits, observer=MovingAverageMinMaxObserver(
+        #                                                     q_level='L', out_channels=None, device=device), activation_weight_flag=2)
+        #     if weight_observer == 0:
+        #         if q_level == 0:
+        #             self.weight_quantizer = AsymmetricQuantizer(bits=w_bits, observer=MinMaxObserver(
+        #                                                         q_level='C', out_channels=out_channels, device=device), activation_weight_flag=2)
+        #         else:
+        #             self.weight_quantizer = AsymmetricQuantizer(bits=w_bits, observer=MinMaxObserver(
+        #                                                         q_level='L', out_channels=None, device=device), activation_weight_flag=2)
+        #     else:
+        #         if q_level == 0:
+        #             self.weight_quantizer = AsymmetricQuantizer(bits=w_bits, observer=MovingAverageMinMaxObserver(
+        #                                                         q_level='C', out_channels=out_channels, device=device), activation_weight_flag=2)
+        #         else:
+        #             self.weight_quantizer = AsymmetricQuantizer(bits=w_bits, observer=MovingAverageMinMaxObserver(
+        #                                                         q_level='L', out_channels=None, device=device), activation_weight_flag=2)                            
+        
     '''
     def quant_int(self):
         self.wgt_q = 
@@ -622,33 +694,33 @@ class QuantBNFuseConvTranspose2d(QuantConvTranspose2d):
             weight_fused = self.weight * reshape_to_weight(self.gamma / torch.sqrt(self.running_var + self.eps))                      # w融running
 
         # 量化A和bn融合后的W
-        # quant_input = self.activation_quantizer(input)
-        # quant_weight = self.weight_quantizer(weight_fused)
-        # #bias不需要截至[-128,127] 注意这儿的bias是对称量化的表示方式，表达式中并没有zero_point
-        # bias_fused = Round.apply(bias_fused / (self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale))*(self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale) 
+        quant_input = self.activation_quantizer(input)
+        quant_weight = self.weight_quantizer(weight_fused)
+        #bias不需要截至[-128,127] 注意这儿的bias是对称量化的表示方式，表达式中并没有zero_point
+        bias_fused = Round.apply(bias_fused / (self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale))*(self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale) 
 
-        quant_input,quant_input_int = self.activation_quantizer(input)
-        quant_weight,quant_weight_int = self.weight_quantizer(weight_fused)
+        # quant_input,quant_input_int = self.activation_quantizer(input)
+        # quant_weight,quant_weight_int = self.weight_quantizer(weight_fused)
 
-        global Mkey_count
-        quant_bias_int = Round.apply(bias_fused / (self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale)) #bias不需要截至[-128,127]
-        quant_bias = quant_bias_int*(self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale)
-        bias_fused = quant_bias
-        # print(torch.mean(quant_bias-bias_fused),torch.max(quant_bias-bias_fused))
+        # global Mkey_count
+        # quant_bias_int = Round.apply(bias_fused / (self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale)) #bias不需要截至[-128,127]
+        # quant_bias = quant_bias_int*(self.weight_quantizer.scale.flatten()*self.activation_quantizer.scale)
+        # bias_fused = quant_bias
+        # # print(torch.mean(quant_bias-bias_fused),torch.max(quant_bias-bias_fused))
 
-        # print("Total(float):", quant_input.mean(), quant_input.min(), quant_input.max())
-        # print("Total(q):", quant_input_int.mean(), quant_input_int.min(), quant_input_int.max())
-        # print("quant_input_int", quant_input_int.shape, quant_input_int)
-        qfeaturemap0=quant_input_int[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
-        np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qinput0.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
-        # # quant_weight_int
-        # print("quant_weight_int", quant_weight_int.shape, quant_weight_int)
-        # print("quant_bias_int", quant_bias_int.shape, quant_bias_int)
-        # qweight=quant_weight_int.detach().cpu().numpy().reshape(quant_weight_int.shape[0],-1) #[16,1,3,3]->[16,9]  [16,8,1,1]->[16,8] 
-        # np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qweight.txt', qweight, fmt="%d", delimiter='  ') 
-        # qbias=quant_bias_int.detach().cpu().numpy().reshape(-1) 
-        # np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qbias.txt', qbias, fmt="%d", delimiter='  ') 
-        Mkey_count += 1 
+        # # print("Total(float):", quant_input.mean(), quant_input.min(), quant_input.max())
+        # # print("Total(q):", quant_input_int.mean(), quant_input_int.min(), quant_input_int.max())
+        # # print("quant_input_int", quant_input_int.shape, quant_input_int)
+        # qfeaturemap0=quant_input_int[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
+        # np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qinput0.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
+        # # # quant_weight_int
+        # # print("quant_weight_int", quant_weight_int.shape, quant_weight_int)
+        # # print("quant_bias_int", quant_bias_int.shape, quant_bias_int)
+        # # qweight=quant_weight_int.detach().cpu().numpy().reshape(quant_weight_int.shape[0],-1) #[16,1,3,3]->[16,9]  [16,8,1,1]->[16,8] 
+        # # np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qweight.txt', qweight, fmt="%d", delimiter='  ') 
+        # # qbias=quant_bias_int.detach().cpu().numpy().reshape(-1) 
+        # # np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count]+'_qbias.txt', qbias, fmt="%d", delimiter='  ') 
+        # Mkey_count += 1 
 
         # 量化卷积
         if self.training:  # 训练态
@@ -732,19 +804,19 @@ class QuantReLU(nn.ReLU):
                                                             q_level='L', out_channels=None, device=device), activation_weight_flag=2)
 
     def forward(self, input):
-        # quant_input = self.activation_quantizer(input)
-        quant_input,quant_input_int = self.activation_quantizer(input)
+        quant_input = self.activation_quantizer(input)
+        # quant_input,quant_input_int = self.activation_quantizer(input)
 
-        print("Total(float):", quant_input.mean(), quant_input.min(), quant_input.max())
-        print("Total(q):", quant_input_int.mean(), quant_input_int.min(), quant_input_int.max())
+        # print("Total(float):", quant_input.mean(), quant_input.min(), quant_input.max())
+        # print("Total(q):", quant_input_int.mean(), quant_input_int.min(), quant_input_int.max())
         # for i in range(quant_input_int.shape[0]):
         #     print(i, quant_input_int[i].mean(), quant_input_int[i].min(), quant_input_int[i].max())
 
-        # quant_input_int
-        global Mkey_count
-        print("quant_relu_int", quant_input_int.shape, quant_input_int)
-        qfeaturemap0=quant_input_int[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
-        np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count-1]+'_qinput_relu.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
+        # # quant_input_int
+        # global Mkey_count
+        # print("quant_relu_int", quant_input_int.shape, quant_input_int)
+        # qfeaturemap0=quant_input_int[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,quant_input_int[0].shape[0]) #[16,128,96]->[128,96,16]->[12288,16]
+        # np.savetxt('output/weights_quan/beforebnfuse/'+Mkey_load[Mkey_count-1]+'_qinput_relu.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
 
         output = F.relu(quant_input, self.inplace)
         return output

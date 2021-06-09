@@ -176,8 +176,10 @@ def main():
         else:
             # model.load_state_dict(torch.load(config.TEST.MODEL_FILE)['model'], strict=False) #保存的no bn版本的权重导入
             if(int_adjust): #int推理
-                int_modelfile='output/weights_quan/int_mobilenetpose_nobn_refactor.pt' #'output/weights_quan/int_mobilenetpose_nobn_refactor.pt'  post_int_mobilenetpose_nobn_refactor.pt
-                model.load_state_dict(torch.load(int_modelfile)['model']) #保存的no bn版本的权重导入
+                # int_modelfile='output/weights_quan/int_mobilenetpose_nobn_refactor.pt' #'output/weights_quan/int_mobilenetpose_nobn_refactor.pt'  post_int_mobilenetpose_nobn_refactor.pt
+                # model.load_state_dict(torch.load(int_modelfile)['model']) #保存的no bn版本的权重导入
+                int_modelfile='output/weights_quan_deconv3/int_mobilenetpose_shortcut0.pt' #_deconv3
+                model.load_state_dict(torch.load(int_modelfile)) #保存的no bn版本的权重导入
                 print('*****Finally load model from',int_modelfile,'*****')
             else:
                 model.load_state_dict(torch.load(config.TEST.MODEL_FILE)['model']) #保存的no bn版本的权重导入
@@ -191,10 +193,10 @@ def main():
         model.load_state_dict(torch.load(model_state_file))
 
     ################################### int版本权重导入 ##########################################
-    int_model.load_state_dict(torch.load('output/weights_quan/int_mobilenetpose_nobn_refactor.pt')['model']) #保存的no bn版本的权重导入
-    # model.load_state_dict(torch.load(config.TEST.MODEL_FILE))
-    gpus = [int(i) for i in config.GPUS.split(',')]
-    int_model = torch.nn.DataParallel(int_model, device_ids=gpus).cuda()
+    # int_model.load_state_dict(torch.load('output/weights_quan/int_mobilenetpose_nobn_refactor.pt')['model']) #保存的no bn版本的权重导入
+    # # model.load_state_dict(torch.load(config.TEST.MODEL_FILE))
+    # gpus = [int(i) for i in config.GPUS.split(',')]
+    # int_model = torch.nn.DataParallel(int_model, device_ids=gpus).cuda()
     #############################################################################################
 
     # define loss function (criterion) and optimizer
@@ -231,10 +233,10 @@ def main():
     # validate(config, valid_loader, valid_dataset, int_model, criterion,
     #          final_output_dir, tb_log_dir, int_adjust=True)
 
-    print(len(models.pose_mobilenet_relu_bnfuse.fmap_block['input']))
-    print(models.pose_mobilenet_relu_bnfuse.fmap_block['input'][0].shape)
-    print(len(models.pose_mobilenet_relu_bnfuse.fmap_block['output']))
-    print(models.pose_mobilenet_relu_bnfuse.fmap_block['output'][0].shape)
+    # print(len(models.pose_mobilenet_relu_bnfuse.fmap_block['input']))
+    # print(models.pose_mobilenet_relu_bnfuse.fmap_block['input'][0].shape)
+    # print(len(models.pose_mobilenet_relu_bnfuse.fmap_block['output']))
+    # print(models.pose_mobilenet_relu_bnfuse.fmap_block['output'][0].shape)
 
 
 if __name__ == '__main__':

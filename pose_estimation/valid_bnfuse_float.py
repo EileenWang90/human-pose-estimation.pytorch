@@ -40,7 +40,7 @@ def parse_args():
     # general
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        default='experiments/coco/resnet50/256x192_d256x3_adam_lr1e-3_mobile.yaml',
+                        default='experiments/coco/resnet50/256x192_d256x3_adam_lr1e-3_mobile.yaml',  #要将其中的deconv 修改成3或者4
                         type=str)
 
     args, rest = parser.parse_known_args()
@@ -189,7 +189,7 @@ def main():
         model.load_state_dict(torch.load(model_state_file))
 
     ################################### int版本权重导入 ##########################################
-    int_model.load_state_dict(torch.load('output/weights_quan/int_mobilenetpose_nobn_refactor.pt')['model']) #保存的no bn版本的权重导入
+    # int_model.load_state_dict(torch.load('output/weights_quan/int_mobilenetpose_nobn_refactor.pt')['model']) #保存的no bn版本的权重导入
     # model.load_state_dict(torch.load(config.TEST.MODEL_FILE))
     gpus = [int(i) for i in config.GPUS.split(',')]
     int_model = torch.nn.DataParallel(int_model, device_ids=gpus).cuda()

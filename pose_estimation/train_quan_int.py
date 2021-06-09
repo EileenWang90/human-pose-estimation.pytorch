@@ -7,7 +7,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='1'
+os.environ['CUDA_VISIBLE_DEVICES']='3'
 import argparse
 import pprint
 import shutil
@@ -72,7 +72,7 @@ def parse_args():
     # general
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        default='experiments/coco/resnet50/mobile_quant_relu_int.yaml',  #experiments/coco/resnet50/mobile_quant_allrelu_int.yaml #量化结果是错误的
+                        default='experiments/coco/resnet50/mobile_quant_relu_int_deconv3.yaml',  #experiments/coco/resnet50/mobile_quant_allrelu_int.yaml #量化结果是错误的
                         type=str)
 
     args, rest = parser.parse_known_args()
@@ -169,12 +169,12 @@ def main():
     device = select_device(config.GPUS, batch_size=config.TEST.BATCH_SIZE*len(gpus))
     #model = model.to(device)
     
-    # ######################## 使用float版本的weight.pt时 ##################################   这时用两块GPU test结果还是0
-    # if(~args.noresume):
-    #     is_train = False
-    #     model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
-    #     #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
-    #     print('Load model weight from',config.MODEL.PRETRAINED)
+    ######################## 使用float版本的weight.pt时 ##################################   这时用两块GPU test结果还是0
+    if(~args.noresume):
+        is_train = False
+        model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
+        #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
+        print('Load model weight from',config.MODEL.PRETRAINED)
 
     ################################## quantization model #################################
     # print('*******************ori_model*******************\n', model)
@@ -183,16 +183,16 @@ def main():
     else: #default quant_method == 0   IAO
         prepare(model, inplace=True, a_bits=config.QUANTIZATION.A_BITS, w_bits=config.QUANTIZATION.W_BITS,q_type=config.QUANTIZATION.Q_TYPE, q_level=config.QUANTIZATION.Q_LEVEL, #device=device, 放了就会出错！ 
                             weight_observer=config.QUANTIZATION.WEIGHT_OBSERVER, bn_fuse=config.QUANTIZATION.BN_FUSE, quant_inference=config.QUANTIZATION.QUANT_INFERENCE)
-    # print('\n*******************quant_model*******************\n', model)
+    print('\n*******************quant_model*******************\n', model)
     print('\n*******************Using quant_model in test*******************\n')
 
-    ####################### 使用量化版本的weight.pt时 ##################################
-    if(~args.noresume):
-        is_train = False
-        print(device) #cuda:0   device=torch.device('cuda:0')
-        model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
-        #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
-        print('Load model weight from',config.MODEL.PRETRAINED)
+    # ####################### 使用量化版本的weight.pt时 ##################################
+    # if(~args.noresume):
+    #     is_train = False
+    #     print(device) #cuda:0   device=torch.device('cuda:0')
+    #     model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
+    #     #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
+    #     print('Load model weight from',config.MODEL.PRETRAINED)
 
     # copy model file
     this_dir = os.path.dirname(__file__)

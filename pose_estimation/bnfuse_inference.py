@@ -34,7 +34,9 @@ import dataset
 import models
 
 import quantize_dorefa
-from quantize_iao import *
+####################### 这个地方需要替换 ########################
+# from quantize_iao import *
+from quantize_iao_deconv3 import *
 # from quantize_iao_uint import *  #对feature map进行uint对称量化
 
 def bn_fuse_conv(bn_conv,device):
@@ -55,26 +57,27 @@ def bn_fuse_conv(bn_conv,device):
     w_fused = w * (gamma / std).reshape([bn_conv.out_channels, 1, 1, 1])
     b_fused = beta + (b - mean) * (gamma / std)
     bn_fused_conv = QuantConv2d(bn_conv.in_channels,
-                                         bn_conv.out_channels,
-                                         bn_conv.kernel_size,
-                                         stride=bn_conv.stride,
-                                         padding=bn_conv.padding,
-                                         dilation=bn_conv.dilation,
-                                         groups=bn_conv.groups,
-                                         bias=True,
-                                         padding_mode=bn_conv.padding_mode,
-                                         a_bits=config.QUANTIZATION.A_BITS,
-                                         w_bits=config.QUANTIZATION.W_BITS,
-                                         q_type=config.QUANTIZATION.Q_TYPE,
-                                         q_level=config.QUANTIZATION.Q_LEVEL,
-                                         device=device,
-                                         quant_inference=True)
+                                bn_conv.out_channels,
+                                bn_conv.kernel_size,
+                                stride=bn_conv.stride,
+                                padding=bn_conv.padding,
+                                dilation=bn_conv.dilation,
+                                groups=bn_conv.groups,
+                                bias=True,
+                                padding_mode=bn_conv.padding_mode,
+                                a_bits=config.QUANTIZATION.A_BITS,
+                                w_bits=config.QUANTIZATION.W_BITS,
+                                q_type=config.QUANTIZATION.Q_TYPE,
+                                q_level=config.QUANTIZATION.Q_LEVEL,
+                                device=device,
+                                quant_inference=True)
     bn_fused_conv.weight.data = w_fused
     bn_fused_conv.bias.data = b_fused
     bn_fused_conv.activation_quantizer.scale.copy_(bn_conv.activation_quantizer.scale)
     bn_fused_conv.activation_quantizer.zero_point.copy_(bn_conv.activation_quantizer.zero_point)
     bn_fused_conv.activation_quantizer.eps = bn_conv.activation_quantizer.eps
     bn_fused_conv.weight_quantizer.scale.copy_(bn_conv.weight_quantizer.scale)
+    # print(bn_conv.weight_quantizer.scale.shape, '\n', bn_conv.weight_quantizer.scale)
     bn_fused_conv.weight_quantizer.zero_point.copy_(bn_conv.weight_quantizer.zero_point)
     bn_fused_conv.weight_quantizer.eps = bn_conv.weight_quantizer.eps
     return bn_fused_conv
@@ -117,6 +120,7 @@ def bn_fuse_deconv(bn_conv,device):
     bn_fused_conv.activation_quantizer.scale.copy_(bn_conv.activation_quantizer.scale)
     bn_fused_conv.activation_quantizer.zero_point.copy_(bn_conv.activation_quantizer.zero_point)
     bn_fused_conv.activation_quantizer.eps = bn_conv.activation_quantizer.eps
+    # print('bn_conv:', bn_conv.weight_quantizer.scale.shape, 'bn_fused_conv:', bn_fused_conv.weight_quantizer.scale.shape) #bn_conv: torch.Size([128, 1, 1, 1]) bn_fused_conv: torch.Size([1])
     bn_fused_conv.weight_quantizer.scale.copy_(bn_conv.weight_quantizer.scale)
     bn_fused_conv.weight_quantizer.zero_point.copy_(bn_conv.weight_quantizer.zero_point)
     bn_fused_conv.weight_quantizer.eps = bn_conv.weight_quantizer.eps
@@ -173,8 +177,8 @@ def parse_args():
     # general
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        default='experiments/coco/resnet50/mobile_quant_relu_int.yaml',
-                        type=str)
+                        default='experiments/coco/resnet50/mobile_quant_relu_int_deconv3.yaml', 
+                        type=str) #_deconv3
 
     args, rest = parser.parse_known_args()
     # update config
@@ -332,10 +336,12 @@ def main():
     # print('\n*******************For inference bn_fuse quant_model*******************\n', model)
     ckpt = {'model': model.module.state_dict() if hasattr(model, 'module') else model.state_dict()}
     # torch.save(ckpt, 'output/weights_quan/int8_mobilenet8_relu_bnfuse_inference.pt')
+    # torch.save(ckpt, 'output/weights_quan_deconv3/int8_mobilenet8_relu_bnfuse_deconv3_float.pt')
 
     logger.info('=> loading model from {}'.format(config.TEST.MODEL_FILE))
     model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device)['model'])  ##为什么还在'model'里面呀？
     model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+
 
     # model.to(device)
     # summary(model,input_size=(3, 256, 192))
