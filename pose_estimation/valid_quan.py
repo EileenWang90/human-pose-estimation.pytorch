@@ -9,7 +9,7 @@ from __future__ import print_function
 
 import argparse
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='1'
+os.environ['CUDA_VISIBLE_DEVICES']='0'
 import pprint
 
 import torch
@@ -33,7 +33,8 @@ import dataset
 import models
 
 import quantize_dorefa
-from quantize_iao import *
+# from quantize_iao import *
+from quantize_iao_deconv3 import *
 # from quantize_iao_uint import *  #对feature map进行uint对称量化
 import LSQquan
 
@@ -184,8 +185,8 @@ def main():
     device = select_device(config.GPUS, batch_size=config.TEST.BATCH_SIZE*len(gpus))
 
     model = model.to(device)
-    # print(model)
-    # summary(model,input_size=(3, 256, 192))
+    print(model)
+    summary(model,input_size=(3, 256, 192))
 
     #print('*******************ori_model*******************\n', model)
     if(config.QUANTIZATION.QUANT_METHOD == 1): # DoReFa
@@ -206,10 +207,10 @@ def main():
             #model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=torch.device('cuda'))['state_dict'])
             model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device)['state_dict'])
             # torch.save(model.module.state_dict(), 'output/coco_quan/mobile_quant_relu_lsq_w8a8_bnfuse0/checkpoint_nomodule.pth.tar')
-        elif(config.TEST.MODEL_FILE.split('/')[-1]=='model_best.pth.tar'):  #multiGPU has model.module.
+        elif(config.TEST.MODEL_FILE.split('/')[-1]=='model_best_140.pth.tar'):  #multiGPU has model.module.
             model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
             model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device))
-        elif(config.TEST.MODEL_FILE.split('/')[-1]=='checkpoint_resave.pth.tar'):  #multiGPU has model.module.
+        elif(config.TEST.MODEL_FILE.split('/')[-1]=='checkpoint_140.pth.tar'):  #multiGPU has model.module.
             model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
             model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device))
         else:  #final_state.pth.tar

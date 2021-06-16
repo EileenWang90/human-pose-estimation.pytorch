@@ -117,3 +117,4 @@ venv.bak/
 output/coco_quan/mobile_quant_relu_w8a8_bnfuse0_resume/checkpoint.pth.tar
 output/weights_quan/*
 output/weights_quan_deconv3/*
+output/weights_quan_deconv3_0/*

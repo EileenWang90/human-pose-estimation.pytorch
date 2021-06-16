@@ -38,7 +38,8 @@ import dataset
 import models
 
 import quantize_dorefa
-from quantize_iao import *
+# from quantize_iao import *
+from quantize_iao_deconv3 import *
 # from quantize_iao_uint import *  #对feature map进行uint对称量化
 
 def select_device(device='', apex=False, batch_size=None):

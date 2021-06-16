@@ -26,7 +26,7 @@ import numpy as np
 
 ############################## int推断时进行数据调整 #########################
 # 先使用浮点值进行数据验算
-convert_path='/home/ytwang/wyt_workspace/quantization/human-pose-estimation.pytorch/output/weights_quan_deconv3/'
+convert_path='/home/ytwang/wyt_workspace/quantization/human-pose-estimation.pytorch/output/weights_quan_deconv3/'  #deconv3_0
 # M_list0 = np.load(convert_path+'M_refactor.npy', allow_pickle=True) #量化感知训练得到的scale
 # M_list = np.load(convert_path+'mscale_norelu_quant.npy', allow_pickle=True)  #去掉relu的量化反量化 得到的scale
 # M_list2 = np.load(convert_path+'M0_quant_requant.npy', allow_pickle=True)  #MO量化反量化 得到的scale
@@ -42,7 +42,7 @@ oscale_list = np.load('/home/ytwang/wyt_workspace/quantization/human-pose-estima
 ascale_list = np.load(convert_path+'ascale_shortcut0.npy', allow_pickle=True)
 Mkey_load = list(np.load(convert_path+'M_key.npy', allow_pickle=True))    #type:np.ndarray ->list  是59层名称的列表
 # Mkey_load=list(Mkey_load)
-verbose=False
+verbose=True #False True
 
 def int_adjust(data, Mkey, adjust=False):  #包括层量化和通道量化
     # print(M_list.item()[Mkey].shape, Mkey) #, M_list.item()[Mkey]) # torch.Size([16]) 
@@ -56,11 +56,12 @@ def int_adjust(data, Mkey, adjust=False):  #包括层量化和通道量化
         # if(verbose==True):
         if(1):
             data_not_xM0=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
-            np.savetxt(result_path+Mkey+'_int_output_not_xM0.txt', data_not_xM0, fmt="%d", delimiter='  ') 
-        data = data * M0_list.item()[Mkey].to(data.device) #.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
-        print(M0_list.item()[Mkey])
+            np.savetxt(result_path+'58_'+Mkey+'_int_output_not_xM0.txt', data_not_xM0, fmt="%d", delimiter='  ') 
+        # data = data * M0_list.item()[Mkey].to(data.device) #.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
+        # print(M0_list.item()[Mkey])  #Tensor(65536)
+        print(data.max())
         # tmp=data[0].detach().cpu().numpy().reshape(data[0].shape[0],-1)
-        if(verbose==True):
+        if(0): #if(verbose==True):
             tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(data[0].shape[0],-1)
             np.savetxt(result_path+'final_layer_output.txt', tmp, fmt="%f", delimiter='  ') 
         # print(time)
@@ -86,9 +87,11 @@ def int_adjust(data, Mkey, adjust=False):  #包括层量化和通道量化
         # data = torch.round(data * Mscale.to(data.device)).clamp_(-128, 127)#.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
         #使用relu前对featuremap进行量化的scale作为oscale
         # print(data[0][0][0][0:2],data[0][0][1][0:2])
-        if(verbose==True):
+        if(0): #if(verbose==True):
             data_not_xM0=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
-            np.savetxt(result_path+Mkey+'_int_output_not_xM0.txt', data_not_xM0, fmt="%d", delimiter='  ') 
+            # np.savetxt(result_path+Mkey+'_int_output_not_xM0.txt', data_not_xM0, fmt="%d", delimiter='  ')  #Mkey_load.index('features.1.conv1')
+            np.savetxt(result_path+str(Mkey_load.index(Mkey))+'_int_output_not_xM0.txt', data_not_xM0, fmt="%d", delimiter='  ') 
+
         # data = torch.round(data * M_list.item()[Mkey].to(data.device)).clamp_(-128, 127)#.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
         data = ((data * M0_list.item()[Mkey].to(data.device) + 2**(BIT-1)).type(torch.int32)>>(BIT)).clamp_(-128, 127).type(torch.float32)#.type(torch.int32) # *M0并移位
         # print(data[0][0][0][0:2],data[0][0][1][0:2])
@@ -103,7 +106,9 @@ def int_adjust(data, Mkey, adjust=False):  #包括层量化和通道量化
             # tmp=data[0].detach().cpu().numpy().reshape(data[0].shape[0],-1)
             tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
             # print(data.shape, tmp.shape)
-            np.savetxt(result_path+Mkey+'_int_output.txt', tmp, fmt="%d", delimiter='  ') 
+            # np.savetxt(result_path+Mkey+'_int_output.txt', tmp, fmt="%d", delimiter='  ') 
+            np.savetxt(result_path+str(Mkey_load.index(Mkey))+'_int_output.txt', tmp, fmt="%d", delimiter='  ') 
+
     else: #浮点模型推断
         result_path='output/weights_quan/validate_float/'
         # # imgs.astype(np.float32).tofile(result_path+'input000001_352x256.bin')
@@ -143,7 +148,8 @@ def shortcut_adjust(data, Mkey, adjust=False):  #针对shortcut进行处理 2, 4
         # tmp=data[0].detach().cpu().numpy().reshape(data[0].shape[0],-1)
     if(verbose==True):
         tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
-        np.savetxt(result_path+Mkey+'_qx_shortcut.txt', tmp, fmt="%d", delimiter='  ') 
+        # np.savetxt(result_path+Mkey+'_qx_shortcut.txt', tmp, fmt="%d", delimiter='  ') 
+        np.savetxt(result_path+str(Mkey_load.index(Mkey))+'_qx_shortcut.txt', tmp, fmt="%d", delimiter='  ') 
     return data
 
 
@@ -162,7 +168,8 @@ def save_quantize_results(data, Mkey, adjust=False):  #now it is for featuremap 
         # np.savetxt(result_path+Mkey+'_int_featuremap.txt', tmp, fmt="%d", delimiter='  ') 
     if(verbose==True):
         tmp=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0]) #
-        np.savetxt(result_path+Mkey+'_int_featuremap.txt', tmp, fmt="%d", delimiter='  ') 
+        # np.savetxt(result_path+Mkey+'_int_featuremap.txt', tmp, fmt="%d", delimiter='  ') 
+        np.savetxt(result_path+str(Mkey_load.index(Mkey))+'_int_featuremap.txt', tmp, fmt="%d", delimiter='  ') 
         if(Mkey=='conv2'):
             tmp.astype(np.int8).tofile('output/weights_quan_deconv3/'+'conv2_8x6x128.bin') #先通道，再行再列
     return data
