@@ -31,6 +31,8 @@ def get_max_preds(batch_heatmaps):
     idx = np.argmax(heatmaps_reshaped, 2)
     maxvals = np.amax(heatmaps_reshaped, 2)
 
+    # print('idx:', idx[0])
+
     maxvals = maxvals.reshape((batch_size, num_joints, 1))
     idx = idx.reshape((batch_size, num_joints, 1))
 
@@ -48,6 +50,12 @@ def get_max_preds(batch_heatmaps):
 
 def get_final_preds(config, batch_heatmaps, center, scale):
     coords, maxvals = get_max_preds(batch_heatmaps)
+    coords1d=[coords[0][x][0]+coords[0][x][1]*48 for x in range(17)] #list
+    coords1d=np.array(coords1d)
+    # print(coords[0].shape, coords[0].astype(int))
+    # print(coords1d.shape, coords1d.astype(int))
+    # print(maxvals[0].shape, maxvals[0].astype(int))
+
 
     heatmap_height = batch_heatmaps.shape[2]
     heatmap_width = batch_heatmaps.shape[3]

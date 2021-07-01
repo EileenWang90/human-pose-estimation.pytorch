@@ -207,7 +207,7 @@ def main():
             #model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=torch.device('cuda'))['state_dict'])
             model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device)['state_dict'])
             # torch.save(model.module.state_dict(), 'output/coco_quan/mobile_quant_relu_lsq_w8a8_bnfuse0/checkpoint_nomodule.pth.tar')
-        elif(config.TEST.MODEL_FILE.split('/')[-1]=='model_best_140.pth.tar'):  #multiGPU has model.module.
+        elif(config.TEST.MODEL_FILE.split('/')[-1]=='model_best_560_280.pth.tar'):  #multiGPU has model.module.
             model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
             model.load_state_dict(torch.load(config.TEST.MODEL_FILE,map_location=device))
         elif(config.TEST.MODEL_FILE.split('/')[-1]=='checkpoint_140.pth.tar'):  #multiGPU has model.module.

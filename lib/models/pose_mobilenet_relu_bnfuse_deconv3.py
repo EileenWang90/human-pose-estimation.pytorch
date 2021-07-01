@@ -42,7 +42,7 @@ oscale_list = np.load('/home/ytwang/wyt_workspace/quantization/human-pose-estima
 ascale_list = np.load(convert_path+'ascale_shortcut0.npy', allow_pickle=True)
 Mkey_load = list(np.load(convert_path+'M_key.npy', allow_pickle=True))    #type:np.ndarray ->list  是59层名称的列表
 # Mkey_load=list(Mkey_load)
-verbose=True #False True
+verbose=False #False True
 
 def int_adjust(data, Mkey, adjust=False):  #包括层量化和通道量化
     # print(M_list.item()[Mkey].shape, Mkey) #, M_list.item()[Mkey]) # torch.Size([16]) 
@@ -54,7 +54,7 @@ def int_adjust(data, Mkey, adjust=False):  #包括层量化和通道量化
     if(adjust==True and Mkey=='final_layer'): #最后一层直接进行浮点计算 不需要舍入和截断
         # print('It is final layer in intmodel.')
         # if(verbose==True):
-        if(1):
+        if(0):
             data_not_xM0=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
             np.savetxt(result_path+'58_'+Mkey+'_int_output_not_xM0.txt', data_not_xM0, fmt="%d", delimiter='  ') 
         # data = data * M0_list.item()[Mkey].to(data.device) #.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
@@ -86,7 +86,8 @@ def int_adjust(data, Mkey, adjust=False):  #包括层量化和通道量化
         # print("Mscale:", Mscale.flatten(),"\nM_list[]=",M_list.item()[Mkey].flatten())
         # data = torch.round(data * Mscale.to(data.device)).clamp_(-128, 127)#.type(torch.int32) # torch.clamp(x, qmin, qmax) w8a8
         #使用relu前对featuremap进行量化的scale作为oscale
-        # print(data[0][0][0][0:2],data[0][0][1][0:2])
+        if(Mkey=='deconv_layers0'):
+            print(data[0][0][0][0:2],data[0][0][1][0:2])
         if(0): #if(verbose==True):
             data_not_xM0=data[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,data[0].shape[0])
             # np.savetxt(result_path+Mkey+'_int_output_not_xM0.txt', data_not_xM0, fmt="%d", delimiter='  ')  #Mkey_load.index('features.1.conv1')
@@ -110,7 +111,7 @@ def int_adjust(data, Mkey, adjust=False):  #包括层量化和通道量化
             np.savetxt(result_path+str(Mkey_load.index(Mkey))+'_int_output.txt', tmp, fmt="%d", delimiter='  ') 
 
     else: #浮点模型推断
-        result_path='output/weights_quan/validate_float/'
+        result_path='output/weights_quan_deconv3/validate_float/'
         # # imgs.astype(np.float32).tofile(result_path+'input000001_352x256.bin')
         # # imgs=imgs.reshape([-1,imgs.shape[-1]]) #(352*256,3)
         # # if(Mkey=='conv1'):
@@ -125,7 +126,7 @@ def int_adjust(data, Mkey, adjust=False):  #包括层量化和通道量化
         # np.savetxt(result_path+Mkey+'_output.txt', featuremap, fmt="%f", delimiter='  ') #一个batch中的第一张图片
         # np.savetxt(result_path+Mkey+'_qoutput.txt', qfeaturemap, fmt="%d", delimiter='  ') 
         # # if(data.shape[0]==80):
-        # #     np.savetxt(result_path+Mkey+'_qoutput.txt', qfeaturemap, fmt="%d", delimiter='  ') 
+        # #     np.savetxt(result_path+Mkey+'_qoutput.txt', qfeaturemap, fmt="%d", delimiter='  ')  
     return data
 
 
@@ -453,7 +454,7 @@ class PoseMobileNet(nn.Module):
 
     def _get_deconv_cfg(self, deconv_kernel, index):
         if deconv_kernel == 4:
-            padding = 1
+            padding = 1 #实际补的0是k-1-padding，这儿就是3-1-1=1，所以在外面包一层0
             output_padding = 0
         elif deconv_kernel == 3:
             padding = 1

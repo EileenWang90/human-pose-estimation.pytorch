@@ -15,8 +15,8 @@ DATASET:
   SCALE_FACTOR: 0.3
 MODEL:
   NAME: 'pose_mobilenet_relu'
-  PRETRAINED: 'output/coco/256x192_d256x3_adam_lr1e-3_mobile8_relu_deconv3/final_state_560.pth.tar' #'output/coco/256x192_d256x3_adam_lr1e-3_mobile8_relu/final_state_560.pth.tar'  output/coco_quan/mobile_quant_relu_w8a8_bnfuse0_resume/final_state.pth.tar
-  IMAGE_SIZE:                                                                           #output/coco_quan/mobile_quant_relu_w8a8_bnfuse0/final_state_140.pth.tar
+  PRETRAINED: 'output/coco_quan/mobile_quant_relu_int_deconv3_w8a8_bnfuse1/final_state_560_140.pth.tar' #'output/coco/256x192_d256x3_adam_lr1e-3_mobile8_relu/final_state_560.pth.tar'  output/coco_quan/mobile_quant_relu_w8a8_bnfuse0_resume/final_state.pth.tar
+  IMAGE_SIZE:              # 'output/coco/256x192_d256x3_adam_lr1e-3_mobile8_relu_deconv3/final_state_560.pth.tar'       #output/coco_quan/mobile_quant_relu_w8a8_bnfuse0/final_state_140.pth.tar
   - 192
   - 256
   NUM_JOINTS: 17
@@ -64,7 +64,7 @@ TEST:
   FLIP_TEST: false
   IMAGE_THRE: 0.0
   IN_VIS_THRE: 0.2
-  MODEL_FILE: 'output/coco_quan/mobile_quant_relu_int_deconv3_w8a8_bnfuse1/final_state_140.pth.tar' #'output/coco_quan/mobile_quant_relu_int_deconv3_w8a8_bnfuse1/model_best.pth.tar'  valid_quan.py
+  MODEL_FILE: 'output/coco_quan/mobile_quant_relu_int_deconv3_w8a8_bnfuse1/model_best_560_280.pth.tar' #'output/coco_quan/mobile_quant_relu_int_deconv3_w8a8_bnfuse1/model_best.pth.tar'  valid_quan.py
   NMS_THRE: 1.0  #'output/weights_quan_deconv3/int8_mobilenet8_relu_bnfuse_deconv3_float.pt' .ipynb  'output/weights_quan/float_mobilenetpose_nobn.pt' 
   OKS_THRE: 0.9
   USE_GT_BBOX: true

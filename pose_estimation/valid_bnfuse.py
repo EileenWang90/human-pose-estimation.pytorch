@@ -34,6 +34,7 @@ from utils.utils import create_logger
 import dataset
 import models
 
+diy_preprocess=True #True False #/lib/model/pose_mobilenet_relu_bnfuse* 相应文件中也需要修改   /lib/core/function.py 也要修改
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train keypoints network')
@@ -133,9 +134,10 @@ def main():
         is_train=False,
         int_adjust=int_adjust,
     )
+    # print(model)
     model = model.cuda()
     # summary(model,input_size=(3, 256, 192))
-    # print(model)
+    
     # for n,param_tensor in enumerate(model.state_dict()):
     #     #打印 key value字典
     #     print(n, param_tensor,'\t',model.state_dict()[param_tensor].size())
@@ -207,16 +209,24 @@ def main():
     # Data loading code
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
-    valid_dataset = eval('dataset.'+config.DATASET.DATASET)(
-        config,
-        config.DATASET.ROOT,
-        config.DATASET.TEST_SET,
-        False,
-        transforms.Compose([
-            transforms.ToTensor(), #ToTensor()能够把灰度范围从0-255变换到0-1之间
-            normalize, #进行归一化
-        ])
-    )
+    if(diy_preprocess==True):  #需要自己进行[0,255]->[0,1]的浮点转换，以及-mean, /std的操作
+        valid_dataset = eval('dataset.'+config.DATASET.DATASET)(
+            config,
+            config.DATASET.ROOT,
+            config.DATASET.TEST_SET,
+            False
+        )
+    else: #diy_preprocess==False
+        valid_dataset = eval('dataset.'+config.DATASET.DATASET)(
+            config,
+            config.DATASET.ROOT,
+            config.DATASET.TEST_SET,
+            False,
+            transforms.Compose([
+                transforms.ToTensor(), #ToTensor()能够把灰度范围从0-255变换到0-1之间,并且进行了通道转换 # pic.transpose((2, 0, 1)) [bs, 256, 192, 3]->[bs, 3, 256, 192]
+                normalize, #进行归一化
+            ])
+        )
     valid_loader = torch.utils.data.DataLoader(
         valid_dataset,
         batch_size=config.TEST.BATCH_SIZE*len(gpus),

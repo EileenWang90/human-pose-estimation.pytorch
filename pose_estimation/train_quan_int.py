@@ -170,12 +170,12 @@ def main():
     device = select_device(config.GPUS, batch_size=config.TEST.BATCH_SIZE*len(gpus))
     #model = model.to(device)
     
-    ######################## 使用float版本的weight.pt时 ##################################   这时用两块GPU test结果还是0
-    if(~args.noresume):
-        is_train = False
-        model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
-        #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
-        print('Load model weight from',config.MODEL.PRETRAINED)
+    # ######################## 使用float版本的weight.pt时 ##################################   这时用两块GPU test结果还是0
+    # if(~args.noresume):
+    #     is_train = False
+    #     model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
+    #     #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
+    #     print('Load model weight from',config.MODEL.PRETRAINED)
 
     ################################## quantization model #################################
     # print('*******************ori_model*******************\n', model)
@@ -187,13 +187,13 @@ def main():
     print('\n*******************quant_model*******************\n', model)
     print('\n*******************Using quant_model in test*******************\n')
 
-    # ####################### 使用量化版本的weight.pt时 ##################################
-    # if(~args.noresume):
-    #     is_train = False
-    #     print(device) #cuda:0   device=torch.device('cuda:0')
-    #     model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
-    #     #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
-    #     print('Load model weight from',config.MODEL.PRETRAINED)
+    ####################### 使用量化版本的weight.pt时 ##################################
+    if(~args.noresume):
+        is_train = False
+        print(device) #cuda:0   device=torch.device('cuda:0')
+        model.load_state_dict(torch.load(config.MODEL.PRETRAINED, map_location=device))
+        #model.load_state_dict(torch.load(config.MODEL.PRETRAINED))
+        print('Load model weight from',config.MODEL.PRETRAINED)
 
     # copy model file
     this_dir = os.path.dirname(__file__)
