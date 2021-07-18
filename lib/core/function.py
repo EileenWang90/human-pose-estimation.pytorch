@@ -93,8 +93,6 @@ def train(config, train_loader, model, criterion, optimizer, epoch,
         # if(i==len(train_loader)//4):
         #     break
 
-
-
 def validate(config, val_loader, val_dataset, model, criterion, output_dir,
              tb_log_dir, writer_dict=None, int_adjust=False):
     batch_time = AverageMeter()
@@ -128,9 +126,9 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                     const0_16=torch.tensor([6703358, 6443221, 5711231]).reshape(1,-1,1,1)
                     round_15=torch.tensor([32768, 32768, 32768]).reshape(1,-1,1,1)
                     input=input.permute(0, 3, 1, 2).type(torch.float32)
-                    qfeaturemap0=input[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,input[0].shape[0]) #[3,256,192]->[256,192,3]->[256*192,3]
-                    qfeaturemap0.astype(np.int8).tofile('output/weights_quan_deconv3/input_preprocess/'+'input_256x192_0_255.bin')
-                    np.savetxt('output/weights_quan_deconv3/input_preprocess/'+'qinput0_0_255.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
+                    # qfeaturemap0=input[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,input[0].shape[0]) #[3,256,192]->[256,192,3]->[256*192,3]
+                    # qfeaturemap0.astype(np.int8).tofile('output/weights_quan_deconv3/input_preprocess/'+'input_256x192_0_255.bin')
+                    # np.savetxt('output/weights_quan_deconv3/input_preprocess/'+'qinput0_0_255.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
                     input = torch.tensor((input*M0 - const0_16).numpy()//65536).type(torch.int32).clamp_(-128,127).type(torch.float32) #从[-2.1179，2.64] 映射到 [-540,673]   + round_15
                     # input = ((input*M0 - const0_16)//65536).type(torch.int32).clamp_(-128,127).type(torch.float32) #从[-2.1179，2.64] 映射到 [-540,673]  
                     # python中直接变为整型是向0靠拢的，-32.8=-32，但硬件中移位附属补码保存，会直接变成-33
@@ -141,15 +139,15 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                 else: #diy_preprocess==False
                     input = torch.round(input *127.5/2.64).clamp_(-128,127) #从[-2.1179，2.64] 映射到 [-540,673]
                 # print(input[0])
-                qfeaturemap0=input[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,input[0].shape[0]) #[3,256,192]->[256,192,3]->[256*192,3]
-                qfeaturemap0.astype(np.int8).tofile('output/weights_quan_deconv3/input_preprocess/'+'input_256x192.bin')
-                np.savetxt('output/weights_quan_deconv3/input_preprocess/'+'qinput0_afterpreprocess.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
-                b=np.fromfile('output/weights_quan_deconv3/input_preprocess/'+'input_256x192.bin',dtype=np.int8)
-                # print(b.shape,input.shape) #input[0].shape torch.Size([3, 256, 192])
-                b=b.reshape(input[0].shape[1],input[0].shape[2],input[0].shape[0]).transpose(2,0,1).astype(np.float32) #(256, 192, 3)
-                # print(b.shape) #(3,256,192)
-                b=np.expand_dims(b,0) #[3,256,192]->[1,3,256,192]
-                input=torch.tensor(b).to(input.device)
+                # qfeaturemap0=input[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,input[0].shape[0]) #[3,256,192]->[256,192,3]->[256*192,3]
+                # qfeaturemap0.astype(np.int8).tofile('output/weights_quan_deconv3/input_preprocess/'+'input_256x192.bin')
+                # np.savetxt('output/weights_quan_deconv3/input_preprocess/'+'qinput0_afterpreprocess.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
+                # b=np.fromfile('output/weights_quan_deconv3/input_preprocess/'+'input_256x192.bin',dtype=np.int8)
+                # # print(b.shape,input.shape) #input[0].shape torch.Size([3, 256, 192])
+                # b=b.reshape(input[0].shape[1],input[0].shape[2],input[0].shape[0]).transpose(2,0,1).astype(np.float32) #(256, 192, 3)
+                # # print(b.shape) #(3,256,192)
+                # b=np.expand_dims(b,0) #[3,256,192]->[1,3,256,192]
+                # input=torch.tensor(b).to(input.device)
             # print(input.shape,torch.max(input), torch.min(input), torch.mean(input.abs())) #torch.Size([128, 3, 256, 192]) tensor(127.) tensor(-102.) tensor(-21.4869)
             # for i in range(input.shape[0]):
             #     print(input[i].shape,torch.max(input[i]), torch.min(input[i]), torch.mean(input[i].abs())) #torch.Size([128, 3, 256, 192]) tensor(127.) tensor(-102.) tensor(-21.4869)
@@ -197,7 +195,6 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
 
             preds, maxvals = get_final_preds(
                 config, output.clone().cpu().numpy(), c, s)
-
             all_preds[idx:idx + num_images, :, 0:2] = preds[:, :, 0:2]
             all_preds[idx:idx + num_images, :, 2:3] = maxvals
             # double check this all_boxes parts

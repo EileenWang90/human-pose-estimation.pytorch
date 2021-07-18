@@ -9,7 +9,7 @@ from __future__ import print_function
 
 import argparse
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='0'
+# os.environ['CUDA_VISIBLE_DEVICES']='0'
 import pprint
 
 import torch
@@ -70,7 +70,7 @@ def parse_args():
     parser.add_argument('--cfg',
                         help='experiment configure file name',
                         default='experiments/coco/resnet50/mobile_quant_relu_int_deconv3.yaml', #mobile_quant_relu_int_deconv3.yaml   mobile_quant_relu_int.yaml  mobile_quant_allrelu_int.yaml
-                        type=str)
+                        type=str) #mobile_quant_relu_int_modify_deconv.yaml
 
     args, rest = parser.parse_known_args()
     # update config
@@ -183,6 +183,7 @@ def main():
     )
     gpus = [int(i) for i in config.GPUS.split(',')]
     device = select_device(config.GPUS, batch_size=config.TEST.BATCH_SIZE*len(gpus))
+    # device = select_device('cpu', batch_size=config.TEST.BATCH_SIZE)
 
     model = model.to(device)
     print(model)

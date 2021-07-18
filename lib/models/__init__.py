@@ -17,3 +17,4 @@ import models.pose_mobilenet_relu
 import models.pose_mobilenet_allrelu
 import models.pose_mobilenet_relu_bnfuse
 import models.pose_mobilenet_relu_bnfuse_deconv3
+import models.pose_mobilenet_relu_modify_deconv
