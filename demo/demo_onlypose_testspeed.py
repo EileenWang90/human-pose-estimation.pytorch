@@ -29,6 +29,8 @@ from core.function import get_final_preds
 from core.inference import get_max_preds
 from utils.transforms import get_affine_transform
 
+import time
+
 cfg=config
 
 COCO_KEYPOINT_INDEXES = {
@@ -99,7 +101,7 @@ def draw_bbox(box,img):
     cv2.rectangle(img, box[0], box[1], color=(0, 255, 0),thickness=3)
 
 
-def get_pose_estimation_prediction(pose_model, image, index): #, center, scale
+def get_pose_estimation_prediction(pose_model, image): #, center, scale
     rotation = 0
 
     # # pose estimation transformation
@@ -122,16 +124,13 @@ def get_pose_estimation_prediction(pose_model, image, index): #, center, scale
 
     diy_preprocess=True
     if(diy_preprocess==True): #需要自己进行[0,255]->[0,1]的浮点转换，以及-mean, /std的操作  RGB数据
-        file_path='output/weights_quan_deconv3/input_preprocess/moreinput/'
         BIT=16
         M0=torch.tensor([54201, 55411, 55165]).reshape(1,-1,1,1) #在通道方向 [1, 3, 1, 1]
         const0_16=torch.tensor([6703358, 6443221, 5711231]).reshape(1,-1,1,1)
         input=torch.tensor(image).unsqueeze(0).permute(0, 3, 1, 2).type(torch.float32)
-        ####################################################### 图像验证数据 ##########################################################
-        qfeaturemap0=input[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,input[0].shape[0]) #[3,256,192]->[256,192,3]->[256*192,3]
-        qfeaturemap0.astype(np.int8).tofile(file_path+'input'+str(index)+'_256x192_0_255.bin')
-        np.savetxt(file_path+'qinput'+str(index)+'_0_255.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
-        ##############################################################################################################################
+        # qfeaturemap0=input[0].detach().cpu().numpy().transpose(1,2,0).reshape(-1,input[0].shape[0]) #[3,256,192]->[256,192,3]->[256*192,3]
+        # qfeaturemap0.astype(np.int8).tofile('output/weights_quan_deconv3/input_preprocess/'+'input_256x192_0_255.bin')
+        # np.savetxt('output/weights_quan_deconv3/input_preprocess/'+'qinput0_0_255.txt', qfeaturemap0, fmt="%d", delimiter='  ') 
         model_input = torch.tensor((input*M0 - const0_16).numpy()//65536).type(torch.int32).clamp_(-128,127).type(torch.float32) #从[-2.1179，2.64] 映射到 [-540,673]   + round_15
         # input = ((input*M0 - const0_16)//65536).type(torch.int32).clamp_(-128,127).type(torch.float32) #从[-2.1179，2.64] 映射到 [-540,673]  
         # python中直接变为整型是向0靠拢的，-32.8=-32，但硬件中移位附属补码保存，会直接变成-33
@@ -173,12 +172,12 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train keypoints network')
     # general
     parser.add_argument('--cfg', type=str, default='experiments/coco/resnet50/256x192_d256x3_adam_lr1e-3_mobile.yaml') #demo/inference-config-simplebaselines-res50.yaml
-    parser.add_argument('--video', type=str)#, default='demo/video/dance_30.mp4') #experiments/coco/resnet50/256x192_d256x3_adam_lr1e-3_mobile.yaml
-    parser.add_argument('--webcam',action='store_true')
-    parser.add_argument('--image',type=str) #, default='demo/test_val2017/3.jpg')
-    parser.add_argument('--image_dir',type=str, default='demo/test_val2017/') #, default='demo/test_val2017/') test nonliving
+    # parser.add_argument('--video', type=str)#, default='demo/video/dance_30.mp4') #experiments/coco/resnet50/256x192_d256x3_adam_lr1e-3_mobile.yaml
+    # parser.add_argument('--webcam',action='store_true')
+    parser.add_argument('--image',type=str, default='demo/test_val2017/3.jpg')
+    parser.add_argument('--image_dir',type=str) #, default='demo/nonliving/')#, default='demo/test_val2017/') test nonliving
     parser.add_argument('--write',action='store_false') #'store_true'
-    parser.add_argument('--showFps',action='store_true')
+    # parser.add_argument('--showFps',action='store_true')
 
     parser.add_argument('opts',
                         help='Modify config options using the command-line',
@@ -196,6 +195,7 @@ def parse_args():
 
 
 def main():
+    program_start=time.time()
     # cudnn related setting
     cudnn.benchmark = cfg.CUDNN.BENCHMARK
     torch.backends.cudnn.deterministic = cfg.CUDNN.DETERMINISTIC
@@ -243,11 +243,7 @@ def main():
     pose_model.eval()
 
     # Loading an video or an image or webcam 
-    if args.webcam:
-        vidcap = cv2.VideoCapture(0)
-    elif args.video:
-        vidcap = cv2.VideoCapture(args.video)
-    elif args.image:
+    if args.image:
         image_bgr = cv2.imread(args.image)
     elif args.image_dir:
         image_dir = args.image_dir
@@ -255,110 +251,61 @@ def main():
         print('please use --video or --webcam or --image or --image_dir to define the input.')
         return 
 
-    if args.webcam or args.video:
-        if args.write:
-            save_path = 'demo/video/dance_30_output.avi'
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            out = cv2.VideoWriter(save_path,fourcc, 24.0, (int(vidcap.get(3)),int(vidcap.get(4))))
-        while True:
-            ret, image_bgr = vidcap.read()
-            if ret:
-                last_time = time.time()
-                image = image_bgr[:, :, [2, 1, 0]]
+    # estimate on the image
+    if(args.image):
+        index=1
+    else: #args.image_dir
+        index=8
 
-                input = []
-                img = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-                img_tensor = torch.from_numpy(img/255.).permute(2,0,1).float().to(CTX)
-                input.append(img_tensor)
+    count=0
+    for i in range(index):
+        if(args.image_dir):
+            img_path=image_dir+str(i)+'.jpg'
+            image_bgr = cv2.imread(img_path) #opencv默认读取是 BGR 3通道，numpy数组，uint8[0-255]
 
-                # object detection box
-                pred_boxes = get_person_detection_boxes(box_model, input, threshold=0.9)
+        last_time = time.time()
+        image = image_bgr[:, :, [2, 1, 0]]
 
-                # pose estimation
-                if len(pred_boxes) >= 1:
-                    for box in pred_boxes:
-                        center, scale = box_to_center_scale(box, cfg.MODEL.IMAGE_SIZE[0], cfg.MODEL.IMAGE_SIZE[1])
-                        image_pose = image.copy() if cfg.DATASET.COLOR_RGB else image_bgr.copy()
-                        pose_preds = get_pose_estimation_prediction(pose_model, image_pose, center, scale)
-                        if len(pose_preds)>=1:
-                            for kpt in pose_preds:
-                                draw_pose(kpt,image_bgr) # draw the poses
+        input = []
+        img = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        img_tensor = torch.from_numpy(img/255.).permute(2,0,1).float().to(CTX)
+        # print(img_tensor.shape) #torch.Size([3, 256, 192])
+        input.append(img_tensor)
+        # print(len(input),type(input)) #1 <class 'list'>
 
-                if args.showFps:
-                    fps = 1/(time.time()-last_time)
-                    img = cv2.putText(image_bgr, 'fps: '+ "%.2f"%(fps), (25, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 2)
-
-                if args.write:
-                    out.write(image_bgr)
-
-                cv2.imshow('demo',image_bgr)
-                if cv2.waitKey(1) & 0XFF==ord('q'):
-                    break
-            else:
-                print('cannot load the video.')
-                break
-
-        cv2.destroyAllWindows()
-        vidcap.release()
-        if args.write:
-            print('video has been saved as {}'.format(save_path))
-            out.release()
-
-    else: # estimate on the image
-        if(args.image):
-            index=1
-        else: #args.image_dir
-            index=8
-
-        count=0
-        for i in range(index):
-            if(args.image_dir):
-                img_path=image_dir+str(i)+'.jpg'
-                image_bgr = cv2.imread(img_path) #opencv默认读取是 BGR 3通道，numpy数组，uint8[0-255]
-
-            last_time = time.time()
-            image = image_bgr[:, :, [2, 1, 0]]
-
-            input = []
-            img = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-            img_tensor = torch.from_numpy(img/255.).permute(2,0,1).float().to(CTX)
-            # print(img_tensor.shape) #torch.Size([3, 256, 192])
-            input.append(img_tensor)
-            # print(len(input),type(input)) #1 <class 'list'>
-
-            image_pose = image_bgr.copy()
-            pose_preds,maxvals = get_pose_estimation_prediction(pose_model, image_pose, i) #pose_preds[1,17,2]  maxvals[1,17,1]
-            point_index = []
-            if len(pose_preds)>=1:
-                # print("###########################################################\n",pose_preds*4,"###########################################################\n")
-                for num,kpt in enumerate(pose_preds[0]):
-                    # assert kpt.shape == (NUM_KPTS,2)
-                    # draw_pose(kpt*4,image_bgr) # draw the poses
-                    # print(maxvals[0][num])
-                    if(int_adjust==True):
-                        MThre=[5579,4255,4563,3438,3726,1647,5097,4778,5012,5419,4625,4787,5777,4312,4487,2317,2932] #阈值为0.2时
-                        if np.max(maxvals[0][num]) > MThre[num]: #去掉置信度较小的关节点
-                            count+=1
-                            point_index.append(num)
-                            print("### 0 ### This is",i,"image, and The threshold of its",num,"keypoint is",np.max(maxvals[0][num]))
-                        else:
-                            print("### 1 ### This is",i,"image, and its",num,"keypoints are under Threshold. The threshold is",np.max(maxvals[0][num]),'/',MThre[num])
-                    else: #int_adjust=False
-                        if np.max(maxvals[0][num]) > 0.2: #去掉置信度较小的关节点
-                            count+=1
-                            point_index.append(num)
-                            print("### 0 ### This is",i,"image, and The threshold of its",num,"keypoint is",np.max(maxvals[0][num]))
-                        else:
-                            print("### 1 ### This is",i,"image, and its",num,"keypoints are under Threshold. The threshold is",np.max(maxvals[0][num]))
-                keypoints=pose_preds[0]*4
-                print('point_index:',point_index)
-                # print('keypoints:',keypoints)
-                    
-                for j in point_index:
-                    x_a, y_a = keypoints[j][0],keypoints[j][1]
-                    cv2.circle(image_bgr, (int(x_a), int(y_a)), 4, CocoColors[j], -1)
-                    # cv2.circle(img, (int(x_b), int(y_b)), 6, CocoColors[i], -1)
-                    # cv2.line(img, (int(x_a), int(y_a)), (int(x_b), int(y_b)), CocoColors[i], 2)
+        image_pose = image_bgr.copy()
+        pose_preds,maxvals = get_pose_estimation_prediction(pose_model, image_pose) #pose_preds[1,17,2]  maxvals[1,17,1]
+        point_index = []
+        if len(pose_preds)>=1:
+            # print("###########################################################\n",pose_preds*4,"###########################################################\n")
+            for num,kpt in enumerate(pose_preds[0]):
+                # assert kpt.shape == (NUM_KPTS,2)
+                # draw_pose(kpt*4,image_bgr) # draw the poses
+                # print(maxvals[0][num])
+                if(int_adjust==True):
+                    MThre=[5579,4255,4563,3438,3726,1647,5097,4778,5012,5419,4625,4787,5777,4312,4487,2317,2932] #阈值为0.2时
+                    if np.max(maxvals[0][num]) > MThre[num]: #去掉置信度较小的关节点
+                        count+=1
+                        point_index.append(num)
+                        print("### 0 ### This is",i,"image, and The threshold of its",num,"keypoint is",np.max(maxvals[0][num]))
+                    else:
+                        print("### 1 ### This is",i,"image, and its",num,"keypoints are under Threshold. The threshold is",np.max(maxvals[0][num]),'/',MThre[num])
+                else: #int_adjust=False
+                    if np.max(maxvals[0][num]) > 0.2: #去掉置信度较小的关节点
+                        count+=1
+                        point_index.append(num)
+                        print("### 0 ### This is",i,"image, and The threshold of its",num,"keypoint is",np.max(maxvals[0][num]))
+                    else:
+                        print("### 1 ### This is",i,"image, and its",num,"keypoints are under Threshold. The threshold is",np.max(maxvals[0][num]))
+            keypoints=pose_preds[0]*4
+            print('point_index:',point_index)
+            # print('keypoints:',keypoints)
+                
+            for j in point_index:
+                x_a, y_a = keypoints[j][0],keypoints[j][1]
+                cv2.circle(image_bgr, (int(x_a), int(y_a)), 4, CocoColors[j], -1)
+                # cv2.circle(img, (int(x_b), int(y_b)), 6, CocoColors[i], -1)
+                # cv2.line(img, (int(x_a), int(y_a)), (int(x_b), int(y_b)), CocoColors[i], 2)
 
             # # object detection box
             # pred_boxes = get_person_detection_boxes(box_model, input, threshold=0.9)
@@ -375,19 +322,22 @@ def main():
             #             for kpt in pose_preds:
             #                 draw_pose(kpt,image_bgr) # draw the poses
             
-            if args.showFps:
-                fps = 1/(time.time()-last_time)
-                img = cv2.putText(image_bgr, 'fps: '+ "%.2f"%(fps), (25, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 2)
-            
-            if args.write:
-                save_path = 'demo/mobilenetv2/test_val2017_image'+str(i)+'.jpg'
-                cv2.imwrite(save_path,image_bgr)
-                print('the result image has been saved as {}'.format(save_path))
+        # if args.showFps:
+        #     fps = 1/(time.time()-last_time)
+        #     img = cv2.putText(image_bgr, 'fps: '+ "%.2f"%(fps), (25, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 2)
+        
+        if args.write:
+            save_path = 'demo/mobilenetv2/test_nonliving_image'+str(i)+'.jpg'
+            cv2.imwrite(save_path,image_bgr)
+            print('the result image has been saved as {}'.format(save_path))
 
-            # cv2.imshow('demo',image_bgr)
-            # if cv2.waitKey(0) & 0XFF==ord('q'):
-            #     cv2.destroyAllWindows()
-        print('count=',count)
+        # cv2.imshow('demo',image_bgr)
+        # if cv2.waitKey(0) & 0XFF==ord('q'):
+        #     cv2.destroyAllWindows()
+        
+    print('count=',count)
+    program_end=time.time()
+    print('Total time=',program_end-program_start)
         
 if __name__ == '__main__':
     main()

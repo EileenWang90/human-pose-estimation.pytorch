@@ -31,7 +31,7 @@ def get_max_preds(batch_heatmaps):
     idx = np.argmax(heatmaps_reshaped, 2)
     maxvals = np.amax(heatmaps_reshaped, 2)
 
-    # print('idx:', idx[0])
+    print('idx:', idx[0])
 
     maxvals = maxvals.reshape((batch_size, num_joints, 1))
     idx = idx.reshape((batch_size, num_joints, 1))
